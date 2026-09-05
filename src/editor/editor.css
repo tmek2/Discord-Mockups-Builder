@@ -113,7 +113,10 @@
   font-weight: 700;
   letter-spacing: -0.01em;
   cursor: pointer;
-  transition: background-color var(--g-fast) var(--g-ease-state), color var(--g-fast) var(--g-ease-state);
+  transition:
+    background-color var(--g-fast) var(--g-ease-state),
+    color var(--g-fast) var(--g-ease-state),
+    transform 90ms var(--g-ease-out);
 }
 .e-section span {
   overflow: hidden;
@@ -128,6 +131,10 @@
   background: var(--g-accent-soft);
   color: var(--g-accent-ink);
 }
+.e-section:active {
+  transform: scale(0.94);
+  transition-duration: 0s;
+}
 
 .e-outline {
   display: flex;
@@ -137,12 +144,38 @@
 }
 
 .e-outline-list {
+  position: relative;
   flex: 1;
   min-height: 0;
   margin: 0;
   padding: 8px;
   overflow-y: auto;
   list-style: none;
+}
+
+.e-outline-item {
+  position: relative;
+}
+/* Held: lifted off the list, and the shadow says how far. The row keeps its
+   place in the flow so nothing below it reflows while it is being moved. */
+.e-outline-item[data-held="true"] .e-outline-row {
+  background: var(--g-grouped-box);
+  border-color: var(--g-accent-line);
+  box-shadow: var(--mac-lift-high);
+  transform: scale(1.02);
+  cursor: grabbing;
+}
+/* Landing: still travelling, no longer held. The lift comes off on the frame
+   the finger does, because that is when it stopped being held — only the
+   journey continues. Keeping it raised until the spring rests leaves a row
+   dropped where it started looking picked up for most of a second. */
+.e-outline-item[data-landing="true"] .e-outline-row {
+  background: var(--g-grouped-box);
+  box-shadow: var(--mac-lift);
+  transition:
+    box-shadow 200ms var(--g-ease-out),
+    background-color 200ms var(--g-ease-state),
+    transform 160ms var(--g-ease-out);
 }
 
 .e-outline-row {
@@ -157,11 +190,24 @@
   color: inherit;
   font: inherit;
   text-align: left;
-  cursor: pointer;
-  transition: background-color var(--g-fast) var(--g-ease-state);
+  cursor: grab;
+  /* The row is dragged, so the browser must not claim the vertical swipe. */
+  touch-action: none;
+  transition:
+    background-color var(--g-fast) var(--g-ease-state),
+    border-color var(--g-fast) var(--g-ease-state),
+    box-shadow var(--g-med) var(--g-ease-out),
+    transform 90ms var(--g-ease-out);
 }
 .e-outline-row:hover {
   background: var(--g-fill);
+}
+.e-outline-row:active {
+  transform: scale(0.99);
+  transition-duration: 0s;
+}
+.e-outline-item[data-held="true"] .e-outline-row:active {
+  transform: scale(1.02);
 }
 .e-outline-row[data-on="true"] {
   border-color: var(--g-accent-line);
@@ -225,6 +271,11 @@
 .e-stage {
   display: flex;
   min-width: 0;
+  /* A grid item's automatic minimum is its content, so without this the stage
+     refuses to be shorter than the canvas inside it and grows past the bottom
+     of the window — `.e-app` clips the overflow, which quietly put the last
+     hundred-odd pixels of the canvas somewhere no pointer could reach. */
+  min-height: 0;
   flex-direction: column;
   background: var(--g-grouped-ground);
   /* The same printed screen the landing has, so the canvas sits on something
@@ -267,6 +318,13 @@
   cursor: pointer;
 }
 
+/* The canvas is grabbed and thrown rather than reached with a scrollbar; see
+   `use-canvas.js`. The cursor says so before the press, and `touch-action`
+   hands vertical panning to the gesture rather than to the browser — without
+   it the browser claims the drag and the pointer events stop arriving mid
+   movement.
+
+   Wheel and trackpad scrolling are untouched. */
 .e-stage-scroll {
   display: flex;
   flex: 1;
@@ -276,6 +334,19 @@
   align-items: flex-start;
   overflow: auto;
   padding: 32px;
+  cursor: grab;
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
+}
+.e-stage-scroll[data-grabbing="true"] {
+  cursor: grabbing;
+  /* Nothing should highlight while the canvas is being moved — a drag that
+     paints a text selection across the mockup is the browser deciding this was
+     a different gesture than it was. */
+  user-select: none;
+}
+.e-stage-scroll[data-grabbing="true"] * {
+  pointer-events: none;
 }
 
 /* The plate the mockup sits on. `transform-origin: top center` keeps the top
@@ -286,6 +357,9 @@
   overflow: hidden;
   border: 1px solid var(--mac-hairline);
   box-shadow: var(--mac-lift-high);
+  /* Width still eases, because it changes from a control rather than from a
+     gesture. The zoom does not: it is on a spring in `use-canvas.js`, and a
+     CSS transition on the same value would be two animations arguing. */
   transition: width var(--g-med) var(--g-ease-sheet);
 }
 
@@ -332,11 +406,28 @@
   letter-spacing: -0.01em;
 }
 
+/* A scroll edge rather than a divider.
+ *
+ * A 1px rule under floating chrome draws a line whether or not anything is
+ * passing beneath it. A short gradient in the panel's own ground does the same
+ * job — separating the chrome from what scrolls under it — and only reads as
+ * an edge where there is something to be an edge against. */
 .e-tabs {
+  position: relative;
   display: flex;
   gap: 2px;
   padding: 0 10px 8px;
-  border-bottom: 1px solid var(--g-line);
+}
+.e-tabs::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: 14px;
+  background: linear-gradient(var(--g-raise), transparent);
+  pointer-events: none;
+  z-index: 1;
 }
 .e-tab {
   display: inline-flex;
@@ -353,7 +444,10 @@
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color var(--g-fast) var(--g-ease-state), color var(--g-fast) var(--g-ease-state);
+  transition:
+    background-color var(--g-fast) var(--g-ease-state),
+    color var(--g-fast) var(--g-ease-state),
+    transform 90ms var(--g-ease-out);
 }
 .e-tab:hover {
   color: var(--g-ink);
@@ -361,6 +455,10 @@
 .e-tab[data-on="true"] {
   background: var(--g-fill-2);
   color: var(--g-ink);
+}
+.e-tab:active {
+  transform: scale(0.96);
+  transition-duration: 0s;
 }
 .e-tab-count {
   padding: 0 5px;
@@ -388,6 +486,18 @@
 
 /* ------------------------------------------------------------ templates */
 
+/* Modal surfaces.
+ *
+ * A blocking task pairs the surface with a scrim that dims what is behind it,
+ * so the page reads as pushed back rather than merely covered. The blur is the
+ * material arriving: it grows with the panel instead of being there from the
+ * first frame, which is what separates glass turning up from a rectangle
+ * fading in.
+ *
+ * Both directions are written. A panel that springs in and then vanishes is
+ * two different interfaces — one where it is a thing that arrived, one where
+ * it was a picture that was switched off — and the way out is what tells you
+ * where the thing went. */
 .e-sheet-scrim,
 .e-palette-scrim {
   position: fixed;
@@ -398,12 +508,22 @@
   padding: 24px;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(3px);
-  animation: e-fade 160ms var(--g-ease-state);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0;
+  transition:
+    opacity 200ms var(--g-ease-state),
+    backdrop-filter 260ms var(--g-ease-out);
 }
-@keyframes e-fade {
-  from {
-    opacity: 0;
-  }
+.e-sheet-scrim[data-state="in"],
+.e-palette-scrim[data-state="in"] {
+  opacity: 1;
+}
+.e-sheet-scrim[data-state="out"],
+.e-palette-scrim[data-state="out"] {
+  opacity: 0;
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  pointer-events: none;
 }
 
 .e-sheet {
@@ -415,13 +535,25 @@
   border-radius: var(--mac-radius);
   background: var(--g-sheet-ground);
   box-shadow: var(--mac-shadow);
-  animation: e-rise 260ms var(--g-ease-sheet);
+  opacity: 0;
+  transform: translateY(14px) scale(0.98);
+  /* Apple's sheet curve: leaves fast, arrives slowly, no overshoot. The
+     inverse curve on the way out, so the return traces the path in. */
+  transition:
+    opacity 220ms var(--g-ease-state),
+    transform 320ms var(--g-ease-sheet);
 }
-@keyframes e-rise {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.985);
-  }
+.e-sheet[data-state="in"] {
+  opacity: 1;
+  transform: none;
+}
+.e-sheet[data-state="out"] {
+  opacity: 0;
+  /* Back down the way it came, not off somewhere else. */
+  transform: translateY(14px) scale(0.98);
+  transition:
+    opacity 160ms var(--g-ease-state),
+    transform 200ms cubic-bezier(0.4, 0, 1, 1);
 }
 
 .e-sheet-head h2 {
@@ -492,6 +624,8 @@
   font-size: 13px;
   font-weight: 600;
   transform: translateX(-50%);
+  /* Up from the bottom edge and back down to it — a notice that rises and then
+     disappears on the spot has no answer to "where did it go". */
   animation: e-toast-in 320ms var(--g-ease-out);
 }
 .e-toast[data-tone="bad"] {
@@ -583,5 +717,66 @@
   }
   .e-nav-compact {
     padding-inline: 10px;
+  }
+}
+
+
+/* ------------------------------------------------ reduced transparency */
+
+/* Translucency is a material, and a material somebody cannot read through is
+   not doing its job. Asked for less of it, every glass surface goes solid and
+   the blur comes off — the hierarchy the material was carrying is carried by
+   the ground colour instead. */
+@media (prefers-reduced-transparency: reduce) {
+  .e-stage-bar {
+    background: var(--g-raise);
+    backdrop-filter: none;
+  }
+  .e-sheet-scrim,
+  .e-palette-scrim {
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .e-sheet,
+  .e-palette,
+  .e-adder-menu {
+    border-color: var(--g-ink-faint);
+  }
+  .e-input,
+  .e-btn {
+    border-color: var(--g-line-strong);
+  }
+  .e-tabs::after {
+    display: none;
+  }
+  .e-tabs {
+    border-bottom: 1px solid var(--g-line-strong);
+  }
+}
+
+/* ------------------------------------------------------ reduced motion */
+
+/* Not "no feedback" — a gentler equivalent. The state changes still happen and
+   still read; they just stop travelling. The springs check the same setting
+   and land on their targets directly. */
+@media (prefers-reduced-motion: reduce) {
+  .e-sheet,
+  .e-sheet[data-state="out"] {
+    transform: none;
+    transition: opacity 160ms ease;
+  }
+  .e-outline-item {
+    transition: none !important;
+  }
+  .e-btn:active:not(:disabled),
+  .e-icon-btn:active:not(:disabled),
+  .e-section:active,
+  .e-tab:active,
+  .e-outline-row:active {
+    transform: none;
   }
 }

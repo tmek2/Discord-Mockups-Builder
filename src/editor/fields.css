@@ -15,11 +15,15 @@
   justify-content: space-between;
   gap: 8px;
 }
+/* Small text wants slightly *positive* tracking — the letters of an 11px
+   label sit too close to read comfortably at a glance. Large display text
+   wants the opposite. One `letter-spacing` for the whole interface is wrong
+   at one end or the other, so it is set per size. */
 .e-field-label {
   color: var(--g-ink-dim);
   font-size: 11.5px;
   font-weight: 800;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.012em;
 }
 .e-field-hint {
   color: var(--g-ink-faint);
@@ -165,7 +169,10 @@
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color var(--g-fast) var(--g-ease-state), color var(--g-fast) var(--g-ease-state);
+  transition:
+    background-color var(--g-fast) var(--g-ease-state),
+    color var(--g-fast) var(--g-ease-state),
+    transform 90ms var(--g-ease-out);
 }
 .e-segment:hover {
   color: var(--g-ink);
@@ -173,6 +180,10 @@
 .e-segment[data-on="true"] {
   background: var(--g-lifted);
   color: var(--g-ink);
+}
+.e-segment:active {
+  transform: scale(0.96);
+  transition-duration: 0s;
 }
 
 .e-toggle {
@@ -219,7 +230,16 @@
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  transition: transform 180ms var(--g-ease-out);
+  /* Slightly under-damped: a switch is a physical throw, and a knob that
+     arrives dead reads as a picture of a switch. This is the closest a CSS
+     curve gets to a spring at damping 0.8 — everything a *gesture* drives is
+     on a real spring instead. */
+  transition: transform 260ms cubic-bezier(0.34, 1.36, 0.64, 1);
+}
+/* The knob stretches toward where it is going, which telegraphs the outcome
+   before the movement finishes. */
+.e-switch:active .e-switch-knob {
+  width: 20px;
 }
 .e-switch[data-on="true"] .e-switch-knob {
   transform: translateX(16px);
@@ -396,6 +416,9 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  /* The press scales the control, so its own painting must not be shared with
+     a parent that is also transforming. */
+  will-change: transform;
   padding: 8px 12px;
   border: 1px solid var(--g-line);
   border-radius: 9px;
@@ -409,11 +432,20 @@
   transition:
     border-color var(--g-fast) var(--g-ease-state),
     background-color var(--g-fast) var(--g-ease-state),
-    color var(--g-fast) var(--g-ease-state);
+    color var(--g-fast) var(--g-ease-state),
+    transform 90ms var(--g-ease-out);
 }
 .e-btn:hover:not(:disabled) {
   border-color: var(--g-line-strong);
   background: var(--g-fill-2);
+}
+/* The press, and it is on `:active` rather than on the click: waiting for the
+   release to acknowledge a press is the difference between a control that is
+   listening and one that is thinking about it. 90ms out and nothing on the way
+   in, so it lands on the frame the finger lands on. */
+.e-btn:active:not(:disabled) {
+  transform: scale(0.972);
+  transition-duration: 0s;
 }
 .e-btn:disabled {
   opacity: 0.4;
@@ -469,11 +501,18 @@
   font: inherit;
   font-size: 13px;
   cursor: pointer;
-  transition: background-color var(--g-fast) var(--g-ease-state), color var(--g-fast) var(--g-ease-state);
+  transition:
+    background-color var(--g-fast) var(--g-ease-state),
+    color var(--g-fast) var(--g-ease-state),
+    transform 90ms var(--g-ease-out);
 }
 .e-icon-btn:hover:not(:disabled) {
   background: var(--g-fill-2);
   color: var(--g-ink);
+}
+.e-icon-btn:active:not(:disabled) {
+  transform: scale(0.9);
+  transition-duration: 0s;
 }
 .e-icon-btn:disabled {
   opacity: 0.35;

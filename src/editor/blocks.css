@@ -141,6 +141,10 @@
   background: transparent;
   cursor: default;
 }
+/* Anchored to the button that opened it, and it grows from there rather than
+   from its own middle — the spatial relationship between the control and what
+   it produced is the thing that makes a menu feel attached instead of
+   summoned. */
 .e-adder-menu {
   position: absolute;
   z-index: 41;
@@ -154,12 +158,13 @@
   border-radius: var(--g-r-inset);
   background: var(--g-sheet-ground);
   box-shadow: var(--mac-lift-high);
-  animation: e-menu 160ms var(--g-ease-out);
+  transform-origin: top center;
+  animation: e-menu 200ms var(--g-ease-sheet);
 }
 @keyframes e-menu {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(-6px) scale(0.97);
   }
 }
 .e-adder-item {
@@ -175,9 +180,14 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: transform 90ms var(--g-ease-out);
 }
 .e-adder-item:hover {
   background: var(--g-fill-2);
+}
+.e-adder-item:active {
+  transform: scale(0.985);
+  transition-duration: 0s;
 }
 .e-adder-name {
   font-size: 12.5px;

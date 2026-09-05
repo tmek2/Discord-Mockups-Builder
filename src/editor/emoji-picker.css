@@ -33,10 +33,18 @@
   border-radius: var(--g-r-inset);
   box-shadow: var(--mac-lift-high);
   overflow: hidden;
-  animation: e-menu 160ms var(--g-ease-out);
+  animation: e-menu 200ms var(--g-ease-sheet);
+}
+/* From the corner nearest its button, so the panel reads as having come out
+   of the control rather than having appeared beside it. */
+.e-emoji-pop {
+  transform-origin: top right;
 }
 .e-emoji-pop[data-align="end"] {
   right: 0;
+}
+.e-emoji-pop[data-align="start"] {
+  transform-origin: top left;
 }
 .e-emoji-pop[data-align="start"] {
   left: 0;

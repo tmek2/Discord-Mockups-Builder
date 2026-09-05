@@ -46,6 +46,9 @@ import { Inspector, TABS } from "./inspector";
 import { CanvasPanel, CloudPanel, EmojiPanel, UsersPanel } from "./panels";
 import { exportMessageJson, exportPng, exportProject, messageJson, readShareLink, shareLink } from "./export";
 import { Palette } from "./palette";
+import { useCanvasGestures } from "./use-canvas";
+import { useOverlay } from "./use-overlay";
+import { useReorder } from "./use-reorder";
 import "./editor.css";
 
 const SECTIONS = [
@@ -79,6 +82,7 @@ export function Builder({ user }) {
   const stage = useRef(null);
   const importer = useRef(null);
   const scroller = useRef(null);
+  const outline = useRef(null);
   const [room, setRoom] = useState(0);
 
   const notify = useCallback((text, tone = "ok") => setToast({ text, tone, key: uid() }), []);
@@ -233,17 +237,31 @@ export function Builder({ user }) {
     setSelected(rest[0]?.id ?? null);
   }, [commit, fail, message, project.messages]);
 
+  /* One move, expressed as "this one goes there". The arrow buttons are a
+     one-step case of it and the drag is an any-step case, so both go through
+     here rather than each having its own idea of what moving means. */
+  const reorder = useCallback(
+    (from, to) => {
+      if (from === to) return;
+      commit((p) => {
+        const list = [...p.messages];
+        const [held] = list.splice(from, 1);
+        list.splice(to, 0, held);
+        return { ...p, messages: list };
+      });
+    },
+    [commit],
+  );
+
   const moveMessage = useCallback(
     (delta) => {
       if (!message) return;
-      const list = [...project.messages];
-      const i = list.findIndex((m) => m.id === message.id);
+      const i = project.messages.findIndex((m) => m.id === message.id);
       const j = i + delta;
-      if (j < 0 || j >= list.length) return;
-      [list[i], list[j]] = [list[j], list[i]];
-      commit((p) => ({ ...p, messages: list }));
+      if (j < 0 || j >= project.messages.length) return;
+      reorder(i, j);
     },
-    [commit, message, project.messages],
+    [message, project.messages, reorder],
   );
 
   /* The whole window is 72px of rail, 240 of channels and 240 of members
@@ -336,6 +354,20 @@ export function Builder({ user }) {
     [fail, load, notify],
   );
 
+  /* ---------------------------------------------------------- gestures */
+
+  const { dragging, zoomShown, handlers: canvasHandlers } = useCanvasGestures({
+    scrollerRef: scroller,
+    zoom,
+    setZoom,
+  });
+
+  const fit = room > 0 ? Math.min(1, room / project.canvas.width) : 1;
+  const shown = zoomShown * fit;
+
+  const rows = useReorder({ count: project.messages.length, onMove: reorder });
+  const sheet = useOverlay(templatesOpen, 200);
+
   /* --------------------------------------------------------- shortcuts */
 
   useEffect(() => {
@@ -376,8 +408,6 @@ export function Builder({ user }) {
   /* ------------------------------------------------------------- render */
 
   const panelTitle = SECTIONS.find((s) => s.id === section)?.label ?? "";
-  const fit = room > 0 ? Math.min(1, room / project.canvas.width) : 1;
-  const shown = zoom * fit;
 
   return (
     <div className="e-app">
@@ -434,7 +464,7 @@ export function Builder({ user }) {
 
           {section === "messages" ? (
             <div className="e-outline">
-              <ol className="e-outline-list">
+              <ol className="e-outline-list" ref={outline}>
                 {project.messages.map((m, i) => {
                   const author = project.users.find((u) => u.id === m.user);
                   const summary =
@@ -444,19 +474,44 @@ export function Builder({ user }) {
                         (m.embeds?.length ? `${m.embeds.length} embed${m.embeds.length > 1 ? "s" : ""}` : "") ||
                         (m.components?.length ? "Components" : "") ||
                         "Empty message";
+                  const held = rows.drag?.index === i && rows.drag.held;
+                  const landing = rows.drag?.index === i && rows.drag.landing;
+                  const shift = rows.offsetFor(i, 46);
                   return (
-                    <li key={m.id}>
+                    <li
+                      key={m.id}
+                      data-row
+                      className="e-outline-item"
+                      data-held={held ? "true" : "false"}
+                      data-landing={landing ? "true" : "false"}
+                      /* The held row moves with the pointer and the rest slide
+                         one slot out of its way. Both are transforms, so the
+                         list never reflows while it is being rearranged. */
+                      style={{
+                        transform: shift ? `translateY(${shift}px)` : undefined,
+                        /* Only the displaced rows ease. The held one is glued
+                           to the pointer, and easing that is putting the row a
+                           few pixels behind the finger on purpose. */
+                        transition:
+                          held || landing
+                            ? "none"
+                            : "transform 220ms cubic-bezier(0.16, 1, 0.3, 1)",
+                        zIndex: held || landing ? 2 : undefined,
+                      }}
+                    >
                       <button
                         type="button"
                         className="e-outline-row"
                         data-on={message?.id === m.id ? "true" : "false"}
                         onClick={() => {
+                          if (rows.drag) return;
                           setSelected(m.id);
                           setPane("inspector");
                         }}
+                        {...rows.handlers(i, outline)}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img className="e-outline-face" src={author?.avatar} alt="" />
+                        <img className="e-outline-face" src={author?.avatar} alt="" draggable={false} />
                         <span className="e-outline-copy">
                           <span className="e-outline-name">{author?.name ?? "Unknown"}</span>
                           <span className="e-outline-text">{summary}</span>
@@ -527,7 +582,12 @@ export function Builder({ user }) {
             </button>
           </div>
 
-          <div className="e-stage-scroll" ref={scroller}>
+          <div
+            className="e-stage-scroll"
+            ref={scroller}
+            data-grabbing={dragging ? "true" : "false"}
+            {...canvasHandlers}
+          >
             <div
               className={`e-frame${project.canvas.platform === "mobile" ? " e-frame-phone" : ""}`}
               style={{
@@ -636,9 +696,15 @@ export function Builder({ user }) {
         ))}
       </nav>
 
-      {templatesOpen ? (
-        <div className="e-sheet-scrim" onClick={() => setTemplatesOpen(false)}>
-          <div className="e-sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Templates">
+      {sheet.mounted ? (
+        <div className="e-sheet-scrim" data-state={sheet.state} onClick={() => setTemplatesOpen(false)}>
+          <div
+            className="e-sheet"
+            data-state={sheet.state}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-label="Templates"
+          >
             <header className="e-sheet-head">
               <h2>Start from something</h2>
               <p>Each one is built to show a different surface. Opening one replaces what is on the canvas.</p>
@@ -678,8 +744,8 @@ export function Builder({ user }) {
         </div>
       ) : null}
 
-      {paletteOpen ? (
-        <Palette
+      <Palette
+          open={paletteOpen}
           onClose={() => setPaletteOpen(false)}
           actions={[
             { label: "Add a message", run: addMessage },
@@ -706,8 +772,7 @@ export function Builder({ user }) {
             },
             ...SECTIONS.map((s) => ({ label: `Go to ${s.label}`, run: () => setSection(s.id) })),
           ]}
-        />
-      ) : null}
+      />
 
       {toast ? (
         <div className="e-toast e-no-export" data-tone={toast.tone} key={toast.key} role="status">

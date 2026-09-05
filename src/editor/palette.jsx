@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useOverlay } from "./use-overlay";
 import "./palette.css";
 
 function matches(query, label) {
@@ -26,7 +27,8 @@ function matches(query, label) {
   return true;
 }
 
-export function Palette({ actions, onClose }) {
+export function Palette({ open, actions, onClose }) {
+  const { mounted, state } = useOverlay(open, 180);
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const input = useRef(null);
@@ -35,8 +37,8 @@ export function Palette({ actions, onClose }) {
   const found = useMemo(() => actions.filter((a) => matches(query, a.label)), [actions, query]);
 
   useEffect(() => {
-    input.current?.focus();
-  }, []);
+    if (state === "in") input.current?.focus();
+  }, [state]);
 
   useEffect(() => {
     setCursor(0);
@@ -47,6 +49,8 @@ export function Palette({ actions, onClose }) {
     list.current?.querySelector('[data-on="true"]')?.scrollIntoView({ block: "nearest" });
   }, [cursor]);
 
+  if (!mounted) return null;
+
   const run = (action) => {
     onClose();
     // After the close, so an action that opens another overlay is not closed
@@ -55,9 +59,10 @@ export function Palette({ actions, onClose }) {
   };
 
   return (
-    <div className="e-palette-scrim" onClick={onClose}>
+    <div className="e-palette-scrim" data-state={state} onClick={onClose}>
       <div
         className="e-palette"
+        data-state={state}
         role="dialog"
         aria-label="Commands"
         onClick={(e) => e.stopPropagation()}

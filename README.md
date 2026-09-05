@@ -30,6 +30,39 @@ Live at **[mockups.gatorsys.xyz](https://mockups.gatorsys.xyz)**.
 - **Saved as you type**, in the browser. Sign in with the same Discord account
   you use for Gator and it is backed up to the cloud as well.
 
+## How it moves
+
+Anything you can put a finger on is on a spring rather than a CSS transition,
+because a transition cannot be grabbed: it runs from where it started to where
+it was told to go, and interrupting it either queues behind it or cuts to a new
+start value. A spring has a current value and a target, so re-aiming it
+mid-flight is just changing the target and the motion stays continuous.
+
+- **The canvas is grabbed, not scrolled.** Press anywhere and it tracks the
+  pointer one-to-one; release and it carries on at the speed your hand had,
+  decaying; press again and it stops dead under your finger. A press that does
+  not travel is still a click that selects a message. Wheel and trackpad
+  scrolling are untouched, and ⌘/ctrl + wheel zooms.
+- **Messages are dragged to reorder.** The row hangs from where you grabbed it
+  rather than snapping to its middle, the gap opens as you cross a neighbour so
+  the outcome is visible before you let go, and the row springs into its slot
+  carrying your release velocity. The arrow buttons still do the same job one
+  step at a time.
+- **Feedback is on the press, not the release.** Every control acknowledges a
+  pointer-down on the frame it lands on.
+- **Panels leave the way they arrived.** A sheet that springs in and vanishes
+  is two different interfaces; the return path is what says where the thing
+  went. Menus and popovers grow from the control that opened them.
+- **Reduced motion is a gentler equivalent, not silence.** With
+  `prefers-reduced-motion: reduce` the springs land on their targets directly,
+  momentum is off, and travel becomes a cross-fade — every state change still
+  reads. `prefers-reduced-transparency` makes the glass solid and
+  `prefers-contrast: more` puts defined borders back.
+
+`src/editor/motion.js` holds the spring, the momentum projection and the
+rubber-band, with the reasoning for each. Damping `1` is the default — nothing
+overshoots unless a gesture put the momentum there.
+
 ## Running it locally
 
 ```bash
