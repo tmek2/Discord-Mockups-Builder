@@ -1,0 +1,200 @@
+/* The component tree. */
+
+.e-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.e-block {
+  border: 1px solid var(--g-line);
+  border-radius: var(--g-r-inset);
+  background: var(--g-grouped-box);
+}
+/* A container reads as a container in the editor too: the same accent stripe
+   the client draws, so the tree on the right matches the picture in the
+   middle without having to be read. */
+.e-block[data-type="container"] {
+  border-left: 3px solid var(--g-accent-line);
+}
+
+.e-block-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 8px 7px 10px;
+}
+.e-block[data-open="true"] .e-block-head {
+  border-bottom: 1px solid var(--g-line);
+}
+
+.e-block-toggle {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.e-block-caret {
+  flex: none;
+  color: var(--g-ink-faint);
+  transition: transform var(--g-fast) var(--g-ease-out);
+}
+.e-block[data-open="false"] .e-block-caret {
+  transform: rotate(-90deg);
+}
+.e-block-kind {
+  flex: none;
+  color: var(--g-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+/* What the block currently holds. "Text" tells you nothing when there are six
+   of them; the first few words tells you which one you are looking for. */
+.e-block-summary {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--g-ink-faint);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.e-block-tools {
+  display: flex;
+  gap: 1px;
+  flex: none;
+}
+
+.e-block-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 10px;
+}
+.e-block-move {
+  display: flex;
+  gap: 6px;
+}
+.e-block-move .e-btn {
+  flex: 1;
+}
+
+/* A nested list is inset and hairlined on the left, so the depth is legible
+   without counting indents. */
+.e-nest {
+  padding-left: 10px;
+  border-left: 2px solid var(--g-line);
+}
+
+.e-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--g-line);
+  border-radius: 9px;
+  background: var(--g-fill);
+}
+.e-sub-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.e-sub-title {
+  color: var(--g-ink-dim);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.e-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.e-fields-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ---------------------------------------------------------------- adder */
+
+.e-adder {
+  position: relative;
+}
+/* A backdrop rather than a document listener, so the click that closes the
+   menu does not also press whatever is underneath it. */
+.e-adder-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+/* Anchored to the button that opened it, and it grows from there rather than
+   from its own middle — the spatial relationship between the control and what
+   it produced is the thing that makes a menu feel attached instead of
+   summoned. */
+.e-adder-menu {
+  position: absolute;
+  z-index: 41;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 5px;
+  border: 1px solid var(--mac-hairline);
+  border-radius: var(--g-r-inset);
+  background: var(--g-sheet-ground);
+  box-shadow: var(--mac-lift-high);
+  transform-origin: top center;
+  animation: e-menu 200ms var(--g-ease-sheet);
+}
+@keyframes e-menu {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+.e-adder-item {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 90ms var(--g-ease-out);
+}
+.e-adder-item:hover {
+  background: var(--g-fill-2);
+}
+.e-adder-item:active {
+  transform: scale(0.985);
+  transition-duration: 0s;
+}
+.e-adder-name {
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.e-adder-hint {
+  color: var(--g-ink-faint);
+  font-size: 11.5px;
+  line-height: 1.4;
+}

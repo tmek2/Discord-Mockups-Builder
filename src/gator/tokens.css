@@ -1,0 +1,280 @@
+/* Gator tokens.
+ *
+ * The same palette the site's landing page is drawn in, so the editor around
+ * the mockup reads as part of Gator rather than as a second product. Dark is
+ * the default and the appearance the design was drawn in; light is below.
+ *
+ * Three settings, two palettes. Auto is not a third palette — it is the
+ * absence of a choice, so `[data-theme]` is simply not set and the device
+ * decides. That is why light is written twice: once for an explicit choice,
+ * once for a device that asked for it while no choice has been made. Grouping
+ * the two selectors would let the device beat the choice.
+ */
+
+:root {
+  /* Ground. Off-black, never #000: pure black flattens the plates against the
+     page and kills the sense that they sit above it. */
+  --g-ground: #0b0b0d;
+  --g-raise: #141417;
+  --g-raise-2: #1c1c21;
+  --g-line: rgba(255, 255, 255, 0.1);
+  --g-line-strong: rgba(255, 255, 255, 0.18);
+  /* A film over the ground, for card fills. Light mode flips its polarity. */
+  --g-fill: rgba(255, 255, 255, 0.025);
+  --g-fill-2: rgba(255, 255, 255, 0.055);
+
+  --g-ink: #f4f2f0;
+  --g-ink-dim: #a3a3ad;
+  --g-ink-faint: #8d8d98;
+
+  /* One accent for the whole product. */
+  --g-accent: #f7a8c4;
+  --g-accent-soft: rgba(247, 168, 196, 0.14);
+  --g-accent-line: rgba(247, 168, 196, 0.34);
+  /* The accent where it has to be *read* rather than seen: a link in a
+     paragraph, a caption, a twelve-pixel label. On this ground the accent is
+     already 10.6:1, so there is nothing to carry down. On paper there is. */
+  --g-accent-ink: #f7a8c4;
+  --g-accent-display: #f7a8c4;
+  /* Text that sits ON the accent. 11:1 against #f7a8c4. */
+  --g-on-accent: #2a0e19;
+
+  /* The mark keeps the gator green. Deliberately not a UI accent: it appears
+     on the animal and nowhere else. */
+  --g-gator: #5fd08a;
+
+  /* The ground under a sheet that sits over a dimmed page. Every other fill
+     here is an alpha over whatever is behind it, which over a scrim means the
+     page reads through; this one is opaque on purpose. */
+  --g-sheet-ground: #26262a;
+
+  /* Grouped surfaces, which are not one colour used twice. A container always
+     sits *above* the ground it is on: in light, a white card on grey; in dark,
+     a lighter grey card on near-black. Getting it backwards is what makes a
+     dark interface look like a light one with the lights off. */
+  --g-grouped-ground: #141417;
+  --g-grouped-box: #1f1f23;
+  --g-lifted: #3b3b40;
+
+  /* The material every plate is made of: the glass, the hairline, the lift and
+     the sheen. `saturate` before `blur` is the order the platform uses — the
+     boost is what stops a blurred dark ground going grey. */
+  --mac-vibrancy: saturate(180%) blur(28px);
+  --mac-glass: rgba(28, 28, 33, 0.62);
+  --mac-glass-strong: rgba(28, 28, 33, 0.82);
+  --mac-hairline: rgba(255, 255, 255, 0.11);
+  --mac-sheen: rgba(255, 255, 255, 0.08);
+  --mac-lift: 0 1px 2px rgba(0, 0, 0, 0.38), 0 10px 30px rgba(0, 0, 0, 0.26);
+  --mac-lift-high: 0 2px 6px rgba(0, 0, 0, 0.45), 0 28px 70px rgba(0, 0, 0, 0.48);
+  --mac-inset: inset 0 1px 0 var(--mac-sheen);
+  --mac-radius: 18px;
+
+  --mac-bar: #2b2b2e;
+  --mac-side-bg: #202023;
+  --mac-pane-bg: #1b1b1e;
+  --mac-label: rgba(255, 255, 255, 0.88);
+  --mac-label-dim: rgba(255, 255, 255, 0.46);
+  --mac-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.14), 0 28px 80px rgba(0, 0, 0, 0.62),
+    0 6px 20px rgba(0, 0, 0, 0.4);
+
+  /* One radius system: interactive is a pill, containers are 16, insets 10. */
+  --g-r-pill: 999px;
+  --g-r-container: 16px;
+  --g-r-inset: 10px;
+
+  --g-fast: 120ms;
+  --g-med: 240ms;
+  --g-slow: 420ms;
+  /* Expo-out for entrances, standard for state changes. */
+  --g-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --g-ease-state: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Leaves fast, arrives slowly, no overshoot. For anything sliding or
+     morphing into place. */
+  --g-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* One gutter for the whole product, so the left edge of a page does not move
+     as you scroll down it. */
+  --g-gutter: clamp(20px, 4.6vw, 76px);
+  --g-shell: 1400px;
+
+  color-scheme: dark;
+}
+
+/* Light. A palette rather than an inversion: beige rather than white, every
+ * surface above it tinted with the same red the accent is made of, and the
+ * accent carried down until it can be read. A neutral grey light mode under a
+ * pink accent looks like a light mode nobody finished. */
+:root[data-theme="light"] {
+  --g-ground: #f3dfc1;
+  --g-raise: #f8ebd9;
+  --g-raise-2: #f5e5cc;
+  --g-line: rgba(74, 36, 49, 0.16);
+  --g-line-strong: rgba(74, 36, 49, 0.28);
+  --g-fill: rgba(74, 36, 49, 0.05);
+  --g-fill-2: rgba(74, 36, 49, 0.09);
+
+  --g-ink: #4a2431;
+  --g-ink-dim: #6f4d51;
+  --g-ink-faint: #7d5c5c;
+
+  /* The accent, and the accent carried down far enough to read. One value
+     cannot be both: a mark or a border needs the brand pink at 3:1, and a line
+     of body copy needs the same hue at 5.9:1. */
+  --g-accent: #df8592;
+  --g-accent-ink: #90525f;
+  --g-accent-display: #d96e7d;
+  --g-accent-soft: rgba(223, 133, 146, 0.2);
+  --g-accent-line: rgba(144, 82, 95, 0.7);
+  /* 5.3:1 on the lightened accent. White would be 3.2:1 and would smear. */
+  --g-on-accent: #4a2431;
+
+  --g-gator: #1f8b4c;
+
+  --g-sheet-ground: #f9f0e2;
+  --g-grouped-ground: #f3dfc1;
+  --g-grouped-box: #f9f0e2;
+  --g-lifted: #fdf9f3;
+
+  --mac-glass: rgba(255, 252, 250, 0.68);
+  --mac-glass-strong: rgba(255, 252, 250, 0.88);
+  --mac-hairline: rgba(90, 40, 55, 0.14);
+  --mac-sheen: rgba(255, 255, 255, 0.85);
+  --mac-lift: 0 1px 2px rgba(80, 35, 50, 0.07), 0 10px 28px rgba(80, 35, 50, 0.09);
+  --mac-lift-high: 0 2px 6px rgba(80, 35, 50, 0.1), 0 28px 64px rgba(80, 35, 50, 0.18);
+
+  --mac-bar: #f4e3c8;
+  --mac-side-bg: #f4e1c5;
+  --mac-pane-bg: #f8eddd;
+  --mac-label: #4a2431;
+  --mac-label-dim: #7d5c5c;
+  --mac-shadow: 0 0 0 0.5px rgba(74, 36, 49, 0.2), 0 28px 80px rgba(74, 36, 49, 0.18),
+    0 6px 20px rgba(74, 36, 49, 0.11);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --g-ground: #f3dfc1;
+    --g-raise: #f8ebd9;
+    --g-raise-2: #f5e5cc;
+    --g-line: rgba(74, 36, 49, 0.16);
+    --g-line-strong: rgba(74, 36, 49, 0.28);
+    --g-fill: rgba(74, 36, 49, 0.05);
+    --g-fill-2: rgba(74, 36, 49, 0.09);
+
+    --g-ink: #4a2431;
+    --g-ink-dim: #6f4d51;
+    --g-ink-faint: #7d5c5c;
+
+    --g-accent: #df8592;
+    --g-accent-ink: #90525f;
+    --g-accent-display: #d96e7d;
+    --g-accent-soft: rgba(223, 133, 146, 0.2);
+    --g-accent-line: rgba(144, 82, 95, 0.7);
+    --g-on-accent: #4a2431;
+
+    --g-gator: #1f8b4c;
+
+    --g-sheet-ground: #f9f0e2;
+    --g-grouped-ground: #f3dfc1;
+    --g-grouped-box: #f9f0e2;
+    --g-lifted: #fdf9f3;
+
+    --mac-glass: rgba(255, 252, 250, 0.68);
+    --mac-glass-strong: rgba(255, 252, 250, 0.88);
+    --mac-hairline: rgba(90, 40, 55, 0.14);
+    --mac-sheen: rgba(255, 255, 255, 0.85);
+    --mac-lift: 0 1px 2px rgba(80, 35, 50, 0.07), 0 10px 28px rgba(80, 35, 50, 0.09);
+    --mac-lift-high: 0 2px 6px rgba(80, 35, 50, 0.1), 0 28px 64px rgba(80, 35, 50, 0.18);
+
+    --mac-bar: #f4e3c8;
+    --mac-side-bg: #f4e1c5;
+    --mac-pane-bg: #f8eddd;
+    --mac-label: #4a2431;
+    --mac-label-dim: #7d5c5c;
+    --mac-shadow: 0 0 0 0.5px rgba(74, 36, 49, 0.2), 0 28px 80px rgba(74, 36, 49, 0.18),
+      0 6px 20px rgba(74, 36, 49, 0.11);
+
+    color-scheme: light;
+  }
+}
+
+/* --------------------------------------------------------------- the page */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--g-ground);
+  color: var(--g-ink);
+  font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.g-shell {
+  width: 100%;
+  max-width: var(--g-shell);
+  margin-inline: auto;
+  padding-inline: clamp(16px, 4vw, 48px);
+}
+
+/* Focus is one ring everywhere, on the accent, never removed. It sets no
+   radius of its own: an outline already follows the element's, and forcing one
+   reshapes the element — which is what used to square off every pill on focus. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--g-accent);
+  outline-offset: 2px;
+}
+
+/* The dotted field. A printed screen rather than a flat ground: at this size
+   flat black reads as a hole, and the dots give it a surface without asking to
+   be looked at. */
+.g-dotfield {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(var(--g-accent) 1px, transparent 1.6px);
+  background-size: 22px 22px;
+  opacity: 0.22;
+  mask-image: radial-gradient(ellipse 78% 62% at 50% 46%, #000 35%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 78% 62% at 50% 46%, #000 35%, transparent 78%);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--g-line-strong);
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--g-ink-faint);
+  background-clip: content-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

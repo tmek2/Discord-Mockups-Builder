@@ -1,0 +1,98 @@
+.e-palette-scrim {
+  align-items: flex-start;
+  padding-top: 14vh;
+}
+
+.e-palette {
+  width: min(560px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--mac-hairline);
+  border-radius: var(--g-r-container);
+  background: var(--g-sheet-ground);
+  box-shadow: var(--mac-shadow);
+  /* Down from above and back up: it is summoned from the top of the window and
+     it returns there. */
+  transform-origin: top center;
+  opacity: 0;
+  transform: translateY(-10px) scale(0.97);
+  transition:
+    opacity 200ms var(--g-ease-state),
+    transform 300ms var(--g-ease-sheet);
+}
+.e-palette[data-state="in"] {
+  opacity: 1;
+  transform: none;
+}
+.e-palette[data-state="out"] {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.97);
+  transition:
+    opacity 140ms var(--g-ease-state),
+    transform 180ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .e-palette,
+  .e-palette[data-state="out"] {
+    transform: none;
+    transition: opacity 140ms ease;
+  }
+}
+
+.e-palette-input {
+  width: 100%;
+  padding: 16px 18px;
+  border: 0;
+  border-bottom: 1px solid var(--g-line);
+  background: transparent;
+  color: var(--g-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+}
+.e-palette-input:focus {
+  outline: none;
+}
+.e-palette-input::placeholder {
+  color: var(--g-ink-faint);
+  font-weight: 500;
+}
+
+.e-palette-list {
+  max-height: 46vh;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.e-palette-row {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--g-ink-dim);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 90ms var(--g-ease-out);
+}
+.e-palette-row[data-on="true"] {
+  background: var(--g-accent-soft);
+  color: var(--g-ink);
+}
+.e-palette-row:active {
+  transform: scale(0.985);
+  transition-duration: 0s;
+}
+
+.e-palette-none {
+  padding: 18px;
+  color: var(--g-ink-faint);
+  font-size: 12.5px;
+  text-align: center;
+}

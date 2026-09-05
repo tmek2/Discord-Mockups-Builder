@@ -1,0 +1,252 @@
+/* --------------------------------------------------------------------- nav */
+
+.g-nav {
+  position: relative;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  height: 72px;
+  padding-inline: var(--g-gutter);
+  transition: opacity var(--g-med) var(--g-ease-state);
+}
+/* On the builder the header is part of the tool rather than a thing floating
+   over a poster: shorter, tighter to the edge, and with a hairline under it so
+   the plate below starts somewhere. */
+.g-nav[data-compact="true"] {
+  height: 56px;
+  padding-inline: 14px;
+  border-bottom: 1px solid var(--g-line);
+  background: var(--g-raise);
+}
+
+/* Everything lives on this layer rather than on the header itself, so the bar
+   can be narrowed and rounded without the positioning going with it. */
+.g-nav-bar {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  align-items: center;
+  gap: 20px;
+}
+.g-nav[data-compact="true"] .g-nav-bar {
+  gap: 12px;
+}
+
+.g-nav-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.g-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--g-accent-display, var(--g-accent));
+  text-decoration: none;
+  flex: none;
+}
+.g-brand-word {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-merriweather), Georgia, serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--g-ink);
+}
+.g-nav[data-compact="true"] .g-brand-word {
+  font-size: 16px;
+}
+/* The second word is what this tool is, not part of the mark: same family, a
+   third smaller, in the dimmed ink — so "Gator" stays the brand and
+   "Mockups" reads as the qualifier it is. */
+.g-brand-sub {
+  font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.66em;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--g-ink-faint);
+}
+
+.g-nav-links {
+  --nav-blob-ease: cubic-bezier(0.34, 1.42, 0.64, 1);
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-inline-start: 14px;
+  min-width: 0;
+}
+
+.g-nav-blob {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--nav-blob-w, 0);
+  height: var(--nav-blob-h, 0);
+  transform: translate(var(--nav-blob-x, 0), var(--nav-blob-y, 0));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 460ms var(--nav-blob-ease),
+    width 300ms var(--nav-blob-ease),
+    opacity 200ms var(--g-ease-state);
+}
+.g-nav-links[data-lit="true"] .g-nav-blob {
+  opacity: 1;
+}
+
+/* The skin is separate from the travel so the two transforms do not fight:
+   the outer element moves, this one squashes. */
+.g-nav-blob-skin {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--g-r-pill);
+  background: var(--g-fill-2);
+  transition: transform 200ms var(--g-ease-out);
+}
+.g-nav-links[data-moving="true"] .g-nav-blob-skin {
+  transform: scaleX(1.14) scaleY(0.88);
+}
+
+.g-nav-link {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: var(--g-r-pill);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--g-ink-dim);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--g-fast) var(--g-ease-state);
+}
+/* No background of its own: the blob behind it is the fill, and two of them
+   stacked made the hovered link a shade darker than the blob it sat on. */
+.g-nav-link:hover,
+.g-nav-link[aria-current="page"] {
+  color: var(--g-ink);
+}
+.g-nav-link:active {
+  transform: translateY(1px);
+}
+.g-nav-link svg {
+  opacity: 0.75;
+}
+
+.g-nav-spacer {
+  flex: 1 1 auto;
+}
+
+/* Fixed width by design: a chip that grows leftward on hover shoves the whole
+   nav sideways every time the pointer crosses it. */
+.g-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 14px 5px 5px;
+  border-radius: var(--g-r-pill);
+  border: 1px solid var(--g-line-strong);
+  background: var(--g-fill-2);
+  color: var(--g-ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  flex: none;
+  backdrop-filter: blur(10px);
+  transition:
+    border-color var(--g-fast) var(--g-ease-state),
+    background-color var(--g-fast) var(--g-ease-state);
+}
+.g-profile:hover {
+  border-color: var(--g-accent-line);
+}
+.g-profile:active {
+  transform: translateY(1px);
+}
+
+.g-signin {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  padding: 8px 16px;
+  border-radius: var(--g-r-pill);
+  border: 1px solid var(--g-line-strong);
+  background: var(--g-fill-2);
+  color: var(--g-ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    border-color var(--g-fast) var(--g-ease-state),
+    background-color var(--g-fast) var(--g-ease-state);
+}
+.g-signin:hover {
+  border-color: var(--g-accent-line);
+  background: var(--g-accent-soft);
+}
+
+.g-profile-face {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  background: var(--g-raise-2);
+}
+.g-profile-mono {
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--g-ink-dim);
+}
+.g-profile-name {
+  max-width: 13ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Below this the links are gone and the header is the mark, the tools, and
+   whatever the page put between them. A second way to the same four places is
+   clutter at a width where there is no room for the first. */
+@media (max-width: 940px) {
+  .g-nav-links {
+    display: none;
+  }
+  .g-profile-name {
+    display: none;
+  }
+  .g-profile {
+    padding: 5px;
+  }
+}
+
+/* On a phone the header is the mark, the name of the thing being edited, and
+   the one control worth a tap. The wordmark goes and the alligator stays: a
+   mark is recognisable at a glance in a way a word set at 16px is not, and it
+   is the half that identifies the product. */
+@media (max-width: 560px) {
+  .g-brand-word {
+    display: none;
+  }
+  .g-signin {
+    padding: 8px 11px;
+  }
+  .g-nav[data-compact="true"] .g-nav-bar {
+    gap: 8px;
+  }
+}

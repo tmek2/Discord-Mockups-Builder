@@ -1,0 +1,841 @@
+"use client";
+
+/* The inspector: everything about the selected message.
+ *
+ * Four tabs, and the split is by what a person is doing rather than by what
+ * the data structure looks like. Content is the message itself. Embeds and
+ * Components are the two ways a bot builds a rich message and are genuinely
+ * separate jobs. Extras is everything a message can carry that is neither —
+ * attachments, a poll, reactions, a thread — grouped because each is a small
+ * form and eight of them in one column is a wall.
+ */
+
+import { useRef } from "react";
+import { IconPlus, IconTrash } from "@tabler/icons-react";
+import {
+  LIMITS,
+  newAttachment,
+  newEmbed,
+  newField,
+  newPoll,
+  newReaction,
+  reid,
+  uid,
+} from "@/lib/model";
+import {
+  ColorField,
+  Counter,
+  Empty,
+  Field,
+  Group,
+  ImageField,
+  Num,
+  Pick,
+  Row,
+  Segmented,
+  Text,
+  Toggle,
+} from "./fields";
+import { BlockList } from "./blocks";
+import { EmojiInsert, EmojiSlot, useEmojiInsert } from "./emoji-picker";
+
+/* ------------------------------------------------------------- content */
+
+const SYSTEM_KINDS = [
+  { value: "join", label: "Joined the server" },
+  { value: "leave", label: "Left the server" },
+  { value: "add", label: "Added to the group" },
+  { value: "boost", label: "Boosted the server" },
+  { value: "pin", label: "Pinned a message" },
+  { value: "thread", label: "Started a thread" },
+  { value: "call", label: "Started a call" },
+  { value: "follow", label: "Followed a channel" },
+];
+
+function ContentTab({ message, patch, project, onError }) {
+  const others = project.messages.filter((m) => m.id !== message.id && m.kind !== "system");
+  const body = useRef(null);
+  const insert = useEmojiInsert(body, message.content, (content) => patch({ content }));
+
+  return (
+    <>
+      <Group title="Message">
+        <Field label="Sent by">
+          <Pick
+            value={message.user}
+            onChange={(v) => patch({ user: v })}
+            options={project.users.map((u) => ({ value: u.id, label: u.name }))}
+          />
+        </Field>
+
+        <Field label="Kind" hint="A system message is the client's own one-line notice, not a message with an author.">
+          <Segmented
+            value={message.kind || "message"}
+            onChange={(v) => patch({ kind: v })}
+            label="Message kind"
+            options={[
+              { value: "message", label: "Message" },
+              { value: "system", label: "System" },
+            ]}
+          />
+        </Field>
+
+        {message.kind === "system" ? (
+          <>
+            <Field label="What happened">
+              <Pick
+                value={message.systemType || "join"}
+                onChange={(v) => patch({ systemType: v })}
+                options={SYSTEM_KINDS}
+              />
+            </Field>
+            <Field label="Override the sentence" hint="Leave empty to use the client's own wording.">
+              <Text value={message.content} onChange={(v) => patch({ content: v })} />
+            </Field>
+          </>
+        ) : (
+          <Field
+            label="Content"
+            hint="Markdown, mentions like <@Rowan>, channels like <#general>, timestamps like <t:1735689600:R>."
+            counter={
+              <span className="e-field-tools">
+                <EmojiInsert onPick={insert} />
+                <Counter value={message.content} limit={LIMITS.content} />
+              </span>
+            }
+          >
+            <Text
+              ref={body}
+              multiline
+              rows={5}
+              value={message.content}
+              onChange={(v) => patch({ content: v })}
+              limit={LIMITS.content}
+            />
+          </Field>
+        )}
+
+        <Field label="Timestamp">
+          <Text value={message.timestamp} onChange={(v) => patch({ timestamp: v })} placeholder="Today at 10:03" />
+        </Field>
+      </Group>
+
+      {message.kind === "system" ? null : (
+        <Group title="How it is drawn" collapsible>
+          <Toggle
+            label="Grouped under the message above"
+            hint="No avatar and no author line, the way the client groups a run from one person."
+            value={message.grouped}
+            onChange={(v) => patch({ grouped: v })}
+          />
+          <Toggle label="Edited" value={message.edited} onChange={(v) => patch({ edited: v })} />
+          <Toggle label="Pinned" value={message.pinned} onChange={(v) => patch({ pinned: v })} />
+          <Toggle
+            label="Ephemeral"
+            hint="Adds the 'Only you can see this' footer."
+            value={message.ephemeral}
+            onChange={(v) => patch({ ephemeral: v })}
+          />
+          <Toggle label="Text to speech" value={message.tts} onChange={(v) => patch({ tts: v })} />
+        </Group>
+      )}
+
+      <Group title="Reply" collapsible open={Boolean(message.reply)}>
+        {others.length ? (
+          <Field label="Replying to" hint="The client draws a spine up to the message being answered.">
+            <Pick
+              value={message.reply || ""}
+              onChange={(v) => patch({ reply: v })}
+              options={[
+                { value: "", label: "Not a reply" },
+                ...others.map((m) => ({
+                  value: m.id,
+                  label: `${project.users.find((u) => u.id === m.user)?.name ?? "?"}: ${
+                    (m.content || "(no text)").slice(0, 40)
+                  }`,
+                })),
+              ]}
+            />
+          </Field>
+        ) : (
+          <Empty>Add another message first and this one can reply to it.</Empty>
+        )}
+      </Group>
+
+      <Group title="Slash command header" collapsible open={Boolean(message.interaction)}>
+        {message.interaction ? (
+          <>
+            <Row>
+              <Field label="Who ran it">
+                <Pick
+                  value={message.interaction.user}
+                  onChange={(v) => patch({ interaction: { ...message.interaction, user: v } })}
+                  options={project.users.map((u) => ({ value: u.id, label: u.name }))}
+                />
+              </Field>
+              <Field label="Command">
+                <Text
+                  value={message.interaction.command}
+                  onChange={(v) => patch({ interaction: { ...message.interaction, command: v } })}
+                  placeholder="shift start"
+                />
+              </Field>
+            </Row>
+            <button type="button" className="e-btn e-btn-quiet" onClick={() => patch({ interaction: null })}>
+              <IconTrash size={14} /> Remove the header
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="e-btn e-btn-dashed"
+            onClick={() => patch({ interaction: { user: project.users[0].id, command: "command" } })}
+          >
+            <IconPlus size={15} /> Add “used /command”
+          </button>
+        )}
+      </Group>
+
+      <Group title="Forwarded message" collapsible open={Boolean(message.forwarded)}>
+        {message.forwarded ? (
+          <>
+            <Field label="What was forwarded">
+              <Text
+                multiline
+                rows={3}
+                value={message.forwarded.content}
+                onChange={(v) => patch({ forwarded: { ...message.forwarded, content: v } })}
+              />
+            </Field>
+            <Field label="From">
+              <Text
+                value={message.forwarded.from}
+                onChange={(v) => patch({ forwarded: { ...message.forwarded, from: v } })}
+                placeholder="#announcements"
+              />
+            </Field>
+            <button type="button" className="e-btn e-btn-quiet" onClick={() => patch({ forwarded: null })}>
+              <IconTrash size={14} /> Remove
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="e-btn e-btn-dashed"
+            onClick={() => patch({ forwarded: { content: "The forwarded text.", from: "#announcements" } })}
+          >
+            <IconPlus size={15} /> Add a forward
+          </button>
+        )}
+      </Group>
+    </>
+  );
+}
+
+/* -------------------------------------------------------------- embeds */
+
+function EmbedEditor({ embed, patch, onRemove, index, onError }) {
+  const fields = embed.fields ?? [];
+  const setField = (id, over) => patch({ fields: fields.map((f) => (f.id === id ? { ...f, ...over } : f)) });
+
+  return (
+    <Group
+      title={`Embed ${index + 1}${embed.title ? ` — ${embed.title.slice(0, 24)}` : ""}`}
+      collapsible
+      open={index === 0}
+      action={
+        <button type="button" className="e-icon-btn" onClick={onRemove} aria-label="Remove embed">
+          <IconTrash size={14} />
+        </button>
+      }
+    >
+      <Field label="Accent">
+        <ColorField value={embed.color} onChange={(v) => patch({ color: v })} />
+      </Field>
+
+      <Row>
+        <Field label="Author" counter={<Counter value={embed.author} limit={LIMITS.embedAuthor} />}>
+          <Text value={embed.author} onChange={(v) => patch({ author: v })} />
+        </Field>
+        <Field label="Author link">
+          <Text value={embed.authorUrl} onChange={(v) => patch({ authorUrl: v })} placeholder="https://…" />
+        </Field>
+      </Row>
+      <ImageField label="Author icon" value={embed.authorIcon} onChange={(v) => patch({ authorIcon: v })} onError={onError} />
+
+      <Field label="Title" counter={<Counter value={embed.title} limit={LIMITS.embedTitle} />}>
+        <Text value={embed.title} onChange={(v) => patch({ title: v })} limit={LIMITS.embedTitle} />
+      </Field>
+      <Field label="Title link">
+        <Text value={embed.url} onChange={(v) => patch({ url: v })} placeholder="https://…" />
+      </Field>
+
+      <Field
+        label="Description"
+        hint="Markdown works here, but headings are drawn smaller than they are in a message."
+        counter={<Counter value={embed.description} limit={LIMITS.embedDescription} />}
+      >
+        <Text
+          multiline
+          rows={4}
+          value={embed.description}
+          onChange={(v) => patch({ description: v })}
+          limit={LIMITS.embedDescription}
+        />
+      </Field>
+
+      <div className="e-fields">
+        <header className="e-fields-head">
+          <span className="e-field-label">Fields</span>
+          <span className="e-field-counter">
+            {fields.length}/{LIMITS.embedFields}
+          </span>
+        </header>
+
+        {fields.map((field, n) => (
+          <div className="e-sub" key={field.id}>
+            <header className="e-sub-head">
+              <span className="e-sub-title">Field {n + 1}</span>
+              <button
+                type="button"
+                className="e-icon-btn"
+                onClick={() => patch({ fields: fields.filter((f) => f.id !== field.id) })}
+                aria-label="Remove field"
+              >
+                <IconTrash size={14} />
+              </button>
+            </header>
+            <Field label="Name" counter={<Counter value={field.name} limit={LIMITS.embedFieldName} />}>
+              <Text value={field.name} onChange={(v) => setField(field.id, { name: v })} />
+            </Field>
+            <Field label="Value" counter={<Counter value={field.value} limit={LIMITS.embedFieldValue} />}>
+              <Text multiline rows={2} value={field.value} onChange={(v) => setField(field.id, { value: v })} />
+            </Field>
+            <Toggle
+              label="Inline"
+              hint="Up to three inline fields share a row. Two on a row take half the width each, not a third."
+              value={field.inline}
+              onChange={(v) => setField(field.id, { inline: v })}
+            />
+          </div>
+        ))}
+
+        <button
+          type="button"
+          className="e-btn e-btn-dashed"
+          disabled={fields.length >= LIMITS.embedFields}
+          onClick={() => patch({ fields: [...fields, newField()] })}
+        >
+          <IconPlus size={15} /> Add a field
+        </button>
+      </div>
+
+      <ImageField label="Thumbnail" value={embed.thumbnail} onChange={(v) => patch({ thumbnail: v })} onError={onError} />
+      <ImageField label="Image" value={embed.image} onChange={(v) => patch({ image: v })} onError={onError} />
+
+      <Row>
+        <Field label="Footer" counter={<Counter value={embed.footer} limit={LIMITS.embedFooter} />}>
+          <Text value={embed.footer} onChange={(v) => patch({ footer: v })} />
+        </Field>
+        <Field label="Timestamp" hint="A date, or a Unix seconds value.">
+          <Text value={embed.timestamp} onChange={(v) => patch({ timestamp: v })} placeholder="2026-09-05 10:00" />
+        </Field>
+      </Row>
+      <ImageField label="Footer icon" value={embed.footerIcon} onChange={(v) => patch({ footerIcon: v })} onError={onError} />
+    </Group>
+  );
+}
+
+function EmbedsTab({ message, patch, onError }) {
+  const embeds = message.embeds ?? [];
+  /* The 6000-character ceiling is across every embed on the message, not per
+     embed, which is the one embed limit people trip over. */
+  const total = embeds.reduce(
+    (n, e) =>
+      n +
+      (e.title?.length ?? 0) +
+      (e.description?.length ?? 0) +
+      (e.author?.length ?? 0) +
+      (e.footer?.length ?? 0) +
+      (e.fields ?? []).reduce((m, f) => m + (f.name?.length ?? 0) + (f.value?.length ?? 0), 0),
+    0,
+  );
+
+  return (
+    <>
+      {embeds.length ? (
+        <div className="e-total" data-over={total > LIMITS.embedTotal ? "true" : "false"}>
+          {total}/{LIMITS.embedTotal} characters across every embed on this message
+        </div>
+      ) : (
+        <Empty>No embeds. An embed is the classic bordered card — for the newer layout, use Components.</Empty>
+      )}
+
+      {embeds.map((embed, i) => (
+        <EmbedEditor
+          key={embed.id}
+          index={i}
+          embed={embed}
+          onError={onError}
+          patch={(over) => patch({ embeds: embeds.map((e) => (e.id === embed.id ? { ...e, ...over } : e)) })}
+          onRemove={() => patch({ embeds: embeds.filter((e) => e.id !== embed.id) })}
+        />
+      ))}
+
+      <div className="e-stack">
+        <button
+          type="button"
+          className="e-btn e-btn-dashed"
+          disabled={embeds.length >= LIMITS.embeds}
+          onClick={() => patch({ embeds: [...embeds, newEmbed({ title: "Embed title", description: "Embed description." })] })}
+        >
+          <IconPlus size={15} /> Add an embed
+          <span className="e-btn-count">
+            {embeds.length}/{LIMITS.embeds}
+          </span>
+        </button>
+        {embeds.length ? (
+          <button
+            type="button"
+            className="e-btn e-btn-quiet"
+            onClick={() => patch({ embeds: [...embeds, reid(embeds[embeds.length - 1])] })}
+          >
+            <IconPlus size={15} /> Duplicate the last one
+          </button>
+        ) : null}
+      </div>
+    </>
+  );
+}
+
+/* -------------------------------------------------------------- extras */
+
+function ExtrasTab({ message, patch, onError }) {
+  const attachments = message.attachments ?? [];
+  const reactions = message.reactions ?? [];
+
+  return (
+    <>
+      <Group title="Attachments" collapsible open={attachments.length > 0}>
+        {attachments.map((a, n) => (
+          <div className="e-sub" key={a.id}>
+            <header className="e-sub-head">
+              <span className="e-sub-title">Attachment {n + 1}</span>
+              <button
+                type="button"
+                className="e-icon-btn"
+                onClick={() => patch({ attachments: attachments.filter((x) => x.id !== a.id) })}
+                aria-label="Remove attachment"
+              >
+                <IconTrash size={14} />
+              </button>
+            </header>
+            <Field label="Kind">
+              <Pick
+                value={a.kind}
+                onChange={(v) => patch({ attachments: attachments.map((x) => (x.id === a.id ? { ...x, kind: v } : x)) })}
+                options={[
+                  { value: "image", label: "Image" },
+                  { value: "video", label: "Video" },
+                  { value: "file", label: "File card" },
+                  { value: "audio", label: "Audio player" },
+                ]}
+              />
+            </Field>
+            {a.kind === "image" || a.kind === "video" ? (
+              <>
+                <ImageField
+                  label="Source"
+                  value={a.src}
+                  onChange={(v) => patch({ attachments: attachments.map((x) => (x.id === a.id ? { ...x, src: v } : x)) })}
+                  onError={onError}
+                />
+                <Toggle
+                  label="Spoiler"
+                  value={a.spoiler}
+                  onChange={(v) => patch({ attachments: attachments.map((x) => (x.id === a.id ? { ...x, spoiler: v } : x)) })}
+                />
+              </>
+            ) : (
+              <Row>
+                <Field label="Name">
+                  <Text
+                    value={a.name}
+                    onChange={(v) => patch({ attachments: attachments.map((x) => (x.id === a.id ? { ...x, name: v } : x)) })}
+                  />
+                </Field>
+                <Field label="Size">
+                  <Text
+                    value={a.size}
+                    onChange={(v) => patch({ attachments: attachments.map((x) => (x.id === a.id ? { ...x, size: v } : x)) })}
+                  />
+                </Field>
+              </Row>
+            )}
+          </div>
+        ))}
+        <button
+          type="button"
+          className="e-btn e-btn-dashed"
+          onClick={() => patch({ attachments: [...attachments, newAttachment()] })}
+        >
+          <IconPlus size={15} /> Add an attachment
+        </button>
+      </Group>
+
+      <Group title="Reactions" collapsible open={reactions.length > 0}>
+        {reactions.map((r, n) => (
+          <div className="e-sub" key={r.id}>
+            <header className="e-sub-head">
+              <span className="e-sub-title">Reaction {n + 1}</span>
+              <button
+                type="button"
+                className="e-icon-btn"
+                onClick={() => patch({ reactions: reactions.filter((x) => x.id !== r.id) })}
+                aria-label="Remove reaction"
+              >
+                <IconTrash size={14} />
+              </button>
+            </header>
+            <Row>
+              <Field label="Emoji">
+                <EmojiSlot
+                  value={r.emoji}
+                  onChange={(v) => patch({ reactions: reactions.map((x) => (x.id === r.id ? { ...x, emoji: v } : x)) })}
+                  placeholder="👍"
+                />
+              </Field>
+              <Field label="Count">
+                <Num
+                  value={r.count}
+                  min={1}
+                  max={999999}
+                  onChange={(v) => patch({ reactions: reactions.map((x) => (x.id === r.id ? { ...x, count: v } : x)) })}
+                />
+              </Field>
+            </Row>
+            <Toggle
+              label="You reacted"
+              hint="Takes the blurple fill and border the client gives your own reaction."
+              value={r.me}
+              onChange={(v) => patch({ reactions: reactions.map((x) => (x.id === r.id ? { ...x, me: v } : x)) })}
+            />
+            <Toggle
+              label="Super reaction"
+              value={r.burst}
+              onChange={(v) => patch({ reactions: reactions.map((x) => (x.id === r.id ? { ...x, burst: v } : x)) })}
+            />
+          </div>
+        ))}
+        <button type="button" className="e-btn e-btn-dashed" onClick={() => patch({ reactions: [...reactions, newReaction()] })}>
+          <IconPlus size={15} /> Add a reaction
+        </button>
+      </Group>
+
+      <Group title="Poll" collapsible open={Boolean(message.poll)}>
+        {message.poll ? (
+          <>
+            <Field label="Question">
+              <Text value={message.poll.question} onChange={(v) => patch({ poll: { ...message.poll, question: v } })} />
+            </Field>
+            {message.poll.answers.map((answer, n) => (
+              <div className="e-sub" key={answer.id}>
+                <header className="e-sub-head">
+                  <span className="e-sub-title">Answer {n + 1}</span>
+                  <button
+                    type="button"
+                    className="e-icon-btn"
+                    onClick={() =>
+                      patch({ poll: { ...message.poll, answers: message.poll.answers.filter((a) => a.id !== answer.id) } })
+                    }
+                    aria-label="Remove answer"
+                  >
+                    <IconTrash size={14} />
+                  </button>
+                </header>
+                <Row>
+                  <Field label="Text">
+                    <Text
+                      value={answer.text}
+                      onChange={(v) =>
+                        patch({
+                          poll: {
+                            ...message.poll,
+                            answers: message.poll.answers.map((a) => (a.id === answer.id ? { ...a, text: v } : a)),
+                          },
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field label="Votes">
+                    <Num
+                      value={answer.votes}
+                      min={0}
+                      onChange={(v) =>
+                        patch({
+                          poll: {
+                            ...message.poll,
+                            answers: message.poll.answers.map((a) => (a.id === answer.id ? { ...a, votes: v } : a)),
+                          },
+                        })
+                      }
+                    />
+                  </Field>
+                </Row>
+                <Field label="Emoji">
+                  <EmojiSlot
+                    value={answer.emoji}
+                    onChange={(v) =>
+                      patch({
+                        poll: {
+                          ...message.poll,
+                          answers: message.poll.answers.map((a) => (a.id === answer.id ? { ...a, emoji: v } : a)),
+                        },
+                      })
+                    }
+                  />
+                </Field>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="e-btn e-btn-dashed"
+              onClick={() =>
+                patch({
+                  poll: {
+                    ...message.poll,
+                    answers: [...message.poll.answers, { id: uid(), text: "Another option", emoji: "", votes: 0 }],
+                  },
+                })
+              }
+            >
+              <IconPlus size={15} /> Add an answer
+            </button>
+            <Row>
+              <Field label="Total votes" hint="Leave at zero to add the answers up.">
+                <Num value={message.poll.total} min={0} onChange={(v) => patch({ poll: { ...message.poll, total: v } })} />
+              </Field>
+              <Field label="Time left">
+                <Text value={message.poll.duration} onChange={(v) => patch({ poll: { ...message.poll, duration: v } })} />
+              </Field>
+            </Row>
+            <Toggle
+              label="Multiple answers"
+              value={message.poll.multiple}
+              onChange={(v) => patch({ poll: { ...message.poll, multiple: v } })}
+            />
+            <Toggle
+              label="Finished"
+              hint="Draws the final results, with the winning answer filled."
+              value={message.poll.finished}
+              onChange={(v) => patch({ poll: { ...message.poll, finished: v } })}
+            />
+            <button type="button" className="e-btn e-btn-quiet" onClick={() => patch({ poll: null })}>
+              <IconTrash size={14} /> Remove the poll
+            </button>
+          </>
+        ) : (
+          <button type="button" className="e-btn e-btn-dashed" onClick={() => patch({ poll: newPoll() })}>
+            <IconPlus size={15} /> Add a poll
+          </button>
+        )}
+      </Group>
+
+      <Group title="Voice message" collapsible open={Boolean(message.voice)}>
+        {message.voice ? (
+          <>
+            <Row>
+              <Field label="Length">
+                <Text value={message.voice.duration} onChange={(v) => patch({ voice: { ...message.voice, duration: v } })} />
+              </Field>
+              <Field label="Played" hint="0 to 1.">
+                <Num
+                  value={message.voice.progress}
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  onChange={(v) => patch({ voice: { ...message.voice, progress: v } })}
+                />
+              </Field>
+            </Row>
+            <button type="button" className="e-btn e-btn-quiet" onClick={() => patch({ voice: null })}>
+              <IconTrash size={14} /> Remove
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="e-btn e-btn-dashed"
+            onClick={() => patch({ voice: { duration: "0:14", progress: 0.35 } })}
+          >
+            <IconPlus size={15} /> Add a voice message
+          </button>
+        )}
+      </Group>
+
+      <Group title="Sticker" collapsible open={Boolean(message.sticker)}>
+        <ImageField
+          label="Sticker image"
+          value={message.sticker?.src ?? ""}
+          onChange={(v) => patch({ sticker: v ? { src: v, name: message.sticker?.name ?? "" } : null })}
+          onError={onError}
+        />
+      </Group>
+
+      <Group title="Thread" collapsible open={Boolean(message.thread)}>
+        {message.thread ? (
+          <>
+            <Row>
+              <Field label="Thread name">
+                <Text value={message.thread.name} onChange={(v) => patch({ thread: { ...message.thread, name: v } })} />
+              </Field>
+              <Field label="Messages">
+                <Num value={message.thread.count} min={0} onChange={(v) => patch({ thread: { ...message.thread, count: v } })} />
+              </Field>
+            </Row>
+            <button type="button" className="e-btn e-btn-quiet" onClick={() => patch({ thread: null })}>
+              <IconTrash size={14} /> Remove
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="e-btn e-btn-dashed"
+            onClick={() => patch({ thread: { name: "Thread", count: 3 } })}
+          >
+            <IconPlus size={15} /> Add a thread tag
+          </button>
+        )}
+      </Group>
+
+      <Group title="Server invite" collapsible open={Boolean(message.invite)}>
+        {message.invite ? (
+          <>
+            <Field label="Server name">
+              <Text value={message.invite.name} onChange={(v) => patch({ invite: { ...message.invite, name: v } })} />
+            </Field>
+            <Row>
+              <Field label="Online">
+                <Text value={message.invite.online} onChange={(v) => patch({ invite: { ...message.invite, online: v } })} />
+              </Field>
+              <Field label="Members">
+                <Text value={message.invite.members} onChange={(v) => patch({ invite: { ...message.invite, members: v } })} />
+              </Field>
+            </Row>
+            <ImageField
+              label="Server icon"
+              value={message.invite.icon}
+              onChange={(v) => patch({ invite: { ...message.invite, icon: v } })}
+              onError={onError}
+            />
+            <button type="button" className="e-btn e-btn-quiet" onClick={() => patch({ invite: null })}>
+              <IconTrash size={14} /> Remove
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="e-btn e-btn-dashed"
+            onClick={() => patch({ invite: { name: "Community", online: "1,204", members: "8,392", icon: "" } })}
+          >
+            <IconPlus size={15} /> Add an invite card
+          </button>
+        )}
+      </Group>
+
+      <Group title="Link preview" collapsible open={Boolean(message.linkPreview)}>
+        {message.linkPreview ? (
+          <>
+            <Row>
+              <Field label="Site">
+                <Text
+                  value={message.linkPreview.provider}
+                  onChange={(v) => patch({ linkPreview: { ...message.linkPreview, provider: v } })}
+                />
+              </Field>
+              <Field label="Accent">
+                <Text
+                  value={message.linkPreview.color}
+                  onChange={(v) => patch({ linkPreview: { ...message.linkPreview, color: v } })}
+                />
+              </Field>
+            </Row>
+            <Field label="Title">
+              <Text
+                value={message.linkPreview.title}
+                onChange={(v) => patch({ linkPreview: { ...message.linkPreview, title: v } })}
+              />
+            </Field>
+            <Field label="Description">
+              <Text
+                multiline
+                rows={2}
+                value={message.linkPreview.description}
+                onChange={(v) => patch({ linkPreview: { ...message.linkPreview, description: v } })}
+              />
+            </Field>
+            <ImageField
+              label="Thumbnail"
+              value={message.linkPreview.thumbnail}
+              onChange={(v) => patch({ linkPreview: { ...message.linkPreview, thumbnail: v } })}
+              onError={onError}
+            />
+            <button type="button" className="e-btn e-btn-quiet" onClick={() => patch({ linkPreview: null })}>
+              <IconTrash size={14} /> Remove
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="e-btn e-btn-dashed"
+            onClick={() =>
+              patch({
+                linkPreview: {
+                  provider: "gatorsys.xyz",
+                  title: "Gator",
+                  description: "Moderation, made simple.",
+                  url: "https://gatorsys.xyz",
+                  color: "#f7a8c4",
+                  thumbnail: "",
+                },
+              })
+            }
+          >
+            <IconPlus size={15} /> Add a link preview
+          </button>
+        )}
+      </Group>
+    </>
+  );
+}
+
+/* --------------------------------------------------------------- shell */
+
+export const TABS = ["Content", "Embeds", "Components", "Extras"];
+
+export function Inspector({ tab, message, project, patch, onError }) {
+  if (!message) return <Empty>Pick a message on the left, or add one.</Empty>;
+
+  switch (tab) {
+    case "Embeds":
+      return <EmbedsTab message={message} patch={patch} onError={onError} />;
+    case "Components":
+      return (
+        <>
+          <div className="e-note">
+            Components v2 — the newer layout, built out of containers, sections and rows rather than
+            an embed. Buttons and menus here are drawn, not wired: nothing sends anything.
+          </div>
+          <BlockList
+            blocks={message.components ?? []}
+            onChange={(components) => patch({ components })}
+            onError={onError}
+          />
+        </>
+      );
+    case "Extras":
+      return <ExtrasTab message={message} patch={patch} onError={onError} />;
+    default:
+      return <ContentTab message={message} patch={patch} project={project} onError={onError} />;
+  }
+}

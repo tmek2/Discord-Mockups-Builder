@@ -1,0 +1,63 @@
+.g-tip-host {
+  position: relative;
+  display: inline-flex;
+}
+
+.g-tip {
+  position: absolute;
+  top: calc(100% + 9px);
+  z-index: 40;
+  padding: 5px 9px;
+  border: 1px solid var(--mac-hairline);
+  border-radius: 8px;
+  background: var(--g-raise-2);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  color: var(--g-ink);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-3px);
+  transition:
+    opacity 140ms var(--g-ease-state),
+    transform 220ms var(--g-ease-out);
+}
+.g-tip-host[data-align="center"] .g-tip {
+  left: 50%;
+  transform: translate(-50%, -3px);
+}
+.g-tip-host[data-align="end"] .g-tip {
+  right: 0;
+}
+.g-tip-host[data-align="start"] .g-tip {
+  left: 0;
+}
+
+@media (hover: hover) {
+  .g-tip-host:hover .g-tip {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .g-tip-host[data-align="center"]:hover .g-tip {
+    transform: translate(-50%, 0);
+  }
+}
+/* `:focus-visible`, not `:focus-within`: a click gives focus too, so the
+   second would leave the label open after every press until focus moved on. */
+.g-tip-host:has(:focus-visible) .g-tip {
+  opacity: 1;
+  transform: translateY(0);
+}
+.g-tip-host[data-align="center"]:has(:focus-visible) .g-tip {
+  transform: translate(-50%, 0);
+}
+
+/* A finger has no hover, so the label would only ever appear stuck after a
+   press. The control's own `aria-label` still carries the sentence. */
+@media (hover: none) {
+  .g-tip {
+    display: none;
+  }
+}
