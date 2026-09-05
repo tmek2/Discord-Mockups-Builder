@@ -438,7 +438,7 @@ export function CanvasPanel({ project, commit, onError, onChrome }) {
  * that line is how a person ends up believing a save happened that did not,
  * so the list shows the cloud's own timestamp rather than the editor's.
  */
-export function CloudPanel({ project, slug, user, onLoad, onError, onNotify }) {
+export function CloudPanel({ project, slug, user, canSignIn = true, onLoad, onError, onNotify }) {
   const [rows, setRows] = useState(null);
   const [busy, setBusy] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
@@ -521,6 +521,22 @@ export function CloudPanel({ project, slug, user, onLoad, onError, onNotify }) {
       setBusy(false);
     }
   };
+
+  /* Nothing to sign in to. Offering a button that leads to a broken flow is
+     worse than saying plainly that this deployment does not do backups. */
+  if (!canSignIn) {
+    return (
+      <div className="e-cloud-empty">
+        <IconCloudOff size={26} />
+        <h3>Cloud backup is switched off</h3>
+        <p>
+          This deployment has no account set up, so there is nowhere to back a mockup up to. Your
+          work is still saved in this browser, and the project file is a full copy you can keep
+          anywhere.
+        </p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

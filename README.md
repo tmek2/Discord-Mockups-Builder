@@ -43,11 +43,14 @@ mid-flight is just changing the target and the motion stays continuous.
   decaying; press again and it stops dead under your finger. A press that does
   not travel is still a click that selects a message. Wheel and trackpad
   scrolling are untouched, and ⌘/ctrl + wheel zooms.
-- **Messages are dragged to reorder.** The row hangs from where you grabbed it
-  rather than snapping to its middle, the gap opens as you cross a neighbour so
-  the outcome is visible before you let go, and the row springs into its slot
-  carrying your release velocity. The arrow buttons still do the same job one
-  step at a time.
+- **Messages are dragged to reorder.** Hover a row in the outline and a grip
+  appears on its left; with a mouse the whole row is draggable, and on a touch
+  screen the grip is the handle so that dragging the row still scrolls the
+  list. The row hangs from where you grabbed it rather than snapping to its
+  middle, the gap opens as you cross a neighbour so the outcome is visible
+  before you let go, the list scrolls itself when you reach its edge, and the
+  row springs into its slot. The ↑ ↓ buttons under the outline do the same job
+  one step at a time and are the keyboard's way through.
 - **Feedback is on the press, not the release.** Every control acknowledges a
   pointer-down on the frame it lands on.
 - **Panels leave the way they arrived.** A sheet that springs in and vanishes
@@ -75,6 +78,11 @@ a mockup — without any environment at all the editor runs, saves locally and
 exports; sign-in and cloud backup are what the variables switch on.
 
 ## Environment
+
+**Nothing here is needed to deploy.** With no variables set at all the site
+builds, the builder runs, autosaves to the browser and exports; the sign-in
+button is simply not drawn and the backup panel says so. Add these when you
+want the account and the cloud copy.
 
 | Variable | Required | What it is |
 | --- | --- | --- |

@@ -39,20 +39,27 @@ const POINTS = [
     title: "Export what you need",
     body: "A transparent or filled PNG at up to 3×, the project file, or the message JSON to hand to a bot.",
   },
-  {
-    Icon: IconCloudUpload,
-    title: "Saved where you left it",
-    body: "Everything is kept in the browser as you type. Sign in with the same Discord account you use for Gator and it is backed up to the cloud as well.",
-  },
 ];
 
-export function Landing({ user }) {
+/* The last point depends on how the deployment is set up, and a page that
+   promises an account on a deployment that has none is a page telling somebody
+   to look for a button that is not there. */
+const SAVING = {
+  Icon: IconCloudUpload,
+  title: "Saved where you left it",
+  withAccount:
+    "Everything is kept in the browser as you type. Sign in with the same Discord account you use for Gator and it is backed up to the cloud as well.",
+  local:
+    "Everything is kept in the browser as you type, and the project file is a full copy you can keep anywhere or hand to somebody else.",
+};
+
+export function Landing({ user, canSignIn = true }) {
   return (
     <div className="g-poster">
       <div className="g-hero-sticky">
         <div className="g-dotfield g-hero-field" aria-hidden="true" />
 
-        <SiteNav user={user} />
+        <SiteNav user={user} canSignIn={canSignIn} />
 
         <main className="g-hero">
           <div className="g-hero-copy">
@@ -99,7 +106,7 @@ export function Landing({ user }) {
         <div className="g-shell">
           <h2 className="g-points-h2">What is in it</h2>
           <ul className="g-points-grid">
-            {POINTS.map(({ Icon, title, body }) => (
+            {[...POINTS, { ...SAVING, body: canSignIn ? SAVING.withAccount : SAVING.local }].map(({ Icon, title, body }) => (
               <li className="g-point" key={title}>
                 <span className="g-point-icon">
                   <Icon size={19} stroke={1.7} />

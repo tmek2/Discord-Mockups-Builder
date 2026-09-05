@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import { auth } from "@/auth";
+import { authConfigured, currentUser } from "@/auth";
 import { mockups, mongoConfigured } from "@/lib/mongo";
 
 export const runtime = "nodejs";
@@ -11,8 +11,7 @@ export const dynamic = "force-dynamic";
    returns somebody else's work; filtering on both means a document that is not
    yours simply does not exist. */
 async function locate(params) {
-  const session = await auth();
-  const ownerId = session?.user?.id;
+  const ownerId = (await currentUser())?.id;
   if (!ownerId) return { error: NextResponse.json({ error: "Sign in first." }, { status: 401 }) };
 
   const { id } = await params;
@@ -23,7 +22,7 @@ async function locate(params) {
 }
 
 export async function GET(request, { params }) {
-  if (!mongoConfigured()) {
+  if (!mongoConfigured() || !authConfigured) {
     return NextResponse.json({ error: "Cloud backup is not configured." }, { status: 503 });
   }
   const { error, filter } = await locate(params);
@@ -45,7 +44,7 @@ export async function GET(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  if (!mongoConfigured()) {
+  if (!mongoConfigured() || !authConfigured) {
     return NextResponse.json({ error: "Cloud backup is not configured." }, { status: 503 });
   }
   const { error, filter } = await locate(params);

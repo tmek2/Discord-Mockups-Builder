@@ -30,7 +30,7 @@ const LINKS = [
    wrong link for a frame. Picking per environment is the usual way out. */
 const useMeasure = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-export function SiteNav({ user, compact = false, links = true, children }) {
+export function SiteNav({ user, canSignIn = true, compact = false, links = true, children }) {
   const here = usePathname();
   const box = useRef(null);
   const tabs = useRef(new Map());
@@ -147,14 +147,14 @@ export function SiteNav({ user, compact = false, links = true, children }) {
                 <span className="g-profile-name">{user.name ?? "Account"}</span>
               </Link>
             </HoverTip>
-          ) : (
+          ) : canSignIn ? (
             <HoverTip label="Sign in with Discord to save to the cloud" align="end">
               <a className="g-signin" href="/api/auth/signin?callbackUrl=%2Fbuilder">
                 <IconBrandDiscord size={16} stroke={1.9} />
                 Sign in
               </a>
             </HoverTip>
-          )}
+          ) : null}
         </div>
       </div>
     </header>

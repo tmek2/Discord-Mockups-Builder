@@ -12,6 +12,30 @@ import Discord from "next-auth/providers/discord";
  * the encrypted JWT cookie. Nothing here calls Discord after the exchange, so
  * there is no refresh path to keep alive either.
  */
+/* Whether this deployment can sign anybody in.
+ *
+ * All three are needed and none has a sensible default, so a deployment
+ * without them is a legitimate configuration rather than a broken one: the
+ * editor runs, saves locally and exports, and the only thing missing is the
+ * account. Asking this before calling `auth()` keeps that path quiet — Auth.js
+ * logs a MissingSecret error per request otherwise, which is a page of noise
+ * about something nobody asked for. */
+export const authConfigured = Boolean(
+  process.env.AUTH_SECRET && process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET,
+);
+
+/** The session, or null — including when sign-in is not configured at all. */
+export async function currentUser() {
+  if (!authConfigured) return null;
+  try {
+    const session = await auth();
+    return session?.user ?? null;
+  } catch {
+    // A misconfiguration should cost the account, not the page.
+    return null;
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   /* Resolve callbacks against whatever host Vercel actually serves rather than
      a hard-coded one: pinning a host fights Vercel's own domain redirect and

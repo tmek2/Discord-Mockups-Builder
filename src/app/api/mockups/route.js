@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { authConfigured, currentUser } from "@/auth";
 import { mockups, mongoConfigured } from "@/lib/mongo";
 import { validProject } from "@/lib/validate";
 
@@ -26,10 +26,8 @@ const MAX_BYTES = 6 * 1024 * 1024;
 const LIST_FIELDS = { projection: { project: 0 } };
 
 async function requireUser() {
-  const session = await auth();
-  const id = session?.user?.id;
-  if (!id) return null;
-  return { id, name: session.user.name ?? null };
+  const user = await currentUser();
+  return user?.id ? { id: user.id, name: user.name ?? null } : null;
 }
 
 function unavailable() {
@@ -40,7 +38,7 @@ function unavailable() {
 }
 
 export async function GET() {
-  if (!mongoConfigured()) return unavailable();
+  if (!mongoConfigured() || !authConfigured) return unavailable();
   const user = await requireUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
 
@@ -66,7 +64,7 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  if (!mongoConfigured()) return unavailable();
+  if (!mongoConfigured() || !authConfigured) return unavailable();
   const user = await requireUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
 

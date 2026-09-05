@@ -191,8 +191,11 @@
   font: inherit;
   text-align: left;
   cursor: grab;
-  /* The row is dragged, so the browser must not claim the vertical swipe. */
-  touch-action: none;
+  /* `pan-y`, not `none`. The list is scrolled by dragging it on a touch
+     screen, and taking the vertical swipe away from every row is taking away
+     the only way to scroll it. The grip below claims `none` for itself, which
+     is why the grip is the drag handle on touch. */
+  touch-action: pan-y;
   transition:
     background-color var(--g-fast) var(--g-ease-state),
     border-color var(--g-fast) var(--g-ease-state),
@@ -213,6 +216,41 @@
   border-color: var(--g-accent-line);
   background: var(--g-accent-soft);
 }
+/* The handle.
+ *
+ * Present but quiet: a drag affordance that is always at full contrast is a
+ * column of grey dots down the side of every row, and the rows are the thing
+ * being read. It comes up on hover, on focus anywhere in the row, and while
+ * anything is being dragged — and it is always visible where there is no
+ * pointer to hover with, because there it is the only way in. */
+.e-grip {
+  display: grid;
+  width: 14px;
+  margin-left: -2px;
+  flex: none;
+  place-items: center;
+  color: var(--g-ink-faint);
+  cursor: grab;
+  /* The one place the browser must not claim the vertical swipe. */
+  touch-action: none;
+  opacity: 0;
+  transition: opacity var(--g-fast) var(--g-ease-state);
+}
+.e-outline-row:hover .e-grip,
+.e-outline-row:focus-visible .e-grip,
+.e-outline-item[data-held="true"] .e-grip {
+  opacity: 1;
+}
+.e-grip:active {
+  cursor: grabbing;
+}
+@media (pointer: coarse) {
+  .e-grip {
+    width: 18px;
+    opacity: 0.65;
+  }
+}
+
 .e-outline-face {
   width: 26px;
   height: 26px;
@@ -264,6 +302,21 @@
   gap: 6px;
   padding: 10px;
   border-top: 1px solid var(--g-line);
+}
+
+/* Only where the header has dropped them. */
+.e-left-narrow {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--g-line);
+}
+@media (max-width: 720px) {
+  .e-left-narrow {
+    display: flex;
+  }
 }
 
 /* ---------------------------------------------------------------- stage */

@@ -23,6 +23,7 @@ import {
   IconDeviceFloppy,
   IconDownload,
   IconFileText,
+  IconGripVertical,
   IconLayoutList,
   IconMoodSmile,
   IconPalette,
@@ -62,7 +63,7 @@ const SECTIONS = [
 const STORE_KEY = "project";
 const SLUG_KEY = "slug";
 
-export function Builder({ user }) {
+export function Builder({ user, canSignIn = true }) {
   const [project, setProject] = useState(blankProject);
   const [slug, setSlug] = useState("draft");
   const [past, setPast] = useState([]);
@@ -411,7 +412,7 @@ export function Builder({ user }) {
 
   return (
     <div className="e-app">
-      <SiteNav user={user} compact links={false}>
+      <SiteNav user={user} canSignIn={canSignIn} compact links={false}>
         <div className="e-titlebar">
           <input
             className="e-project-name"
@@ -510,6 +511,19 @@ export function Builder({ user }) {
                         }}
                         {...rows.handlers(i, outline)}
                       >
+                        {/* The handle. A span rather than a button, because a
+                            button inside a button is invalid markup — it
+                            carries pointer handlers only, and the arrow
+                            buttons below are the keyboard's way to reorder.
+                            On a touch screen it is the only way in, since
+                            dragging the row itself is how the list scrolls. */}
+                        <span
+                          className="e-grip"
+                          aria-hidden="true"
+                          {...rows.gripHandlers(i, outline)}
+                        >
+                          <IconGripVertical size={14} />
+                        </span>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img className="e-outline-face" src={author?.avatar} alt="" draggable={false} />
                         <span className="e-outline-copy">
@@ -546,6 +560,21 @@ export function Builder({ user }) {
           ) : null}
 
           <div className="e-left-foot">
+            {/* The header drops these two below 720px for room, and the
+                command palette that also carries them wants a keyboard. On a
+                phone this pane is where they live instead — drawn only at the
+                widths where the header is not showing them. */}
+            <div className="e-left-narrow">
+              <button type="button" className="e-btn e-btn-quiet" onClick={() => setTemplatesOpen(true)}>
+                <IconStack2 size={15} /> Templates
+              </button>
+              <button type="button" className="e-btn e-btn-quiet" onClick={doShare}>
+                <IconShare2 size={15} /> Share a link
+              </button>
+              <button type="button" className="e-btn e-btn-quiet" onClick={() => setPaletteOpen(true)}>
+                <IconSettings size={15} /> All commands
+              </button>
+            </div>
             <button type="button" className="e-btn e-btn-quiet" onClick={() => importer.current?.click()}>
               <IconDownload size={15} style={{ transform: "rotate(180deg)" }} /> Import a project
             </button>
@@ -664,6 +693,7 @@ export function Builder({ user }) {
                 project={project}
                 slug={slug}
                 user={user}
+                canSignIn={canSignIn}
                 onLoad={load}
                 onError={fail}
                 onNotify={notify}
