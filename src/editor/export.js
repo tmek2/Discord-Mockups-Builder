@@ -184,16 +184,53 @@ export function exportMessageJson(message, name) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/* A share link carries the project in the fragment, which is never sent to the
- * server — so a shared mockup is between the two people who have the link and
- * nothing on this deployment ever sees it. It is also why there is a size
- * limit: browsers cap a URL somewhere around 32k, and a project with a pasted
- * screenshot in it is well past that. */
-export function shareLink(project) {
+/* Two kinds of share link, and the tool tries them in the order that keeps
+ * the most work private.
+ *
+ * The fragment link carries the whole mockup after the `#`, which browsers
+ * never send to a server — so a mockup shared this way is between the two
+ * people who have the link and nothing on this deployment ever sees it. It is
+ * the default whenever it fits.
+ *
+ * It stops fitting at about 28k, because browsers cap a URL somewhere around
+ * 32k and a project with a pasted screenshot in it is well past that. Then
+ * the short link takes over: the mockup goes to the deployment's own store
+ * under an eight-character id with an expiry, which is also the link you can
+ * read out loud.
+ */
+export function fragmentLink(project) {
   const json = JSON.stringify(project);
   const packed = btoa(unescape(encodeURIComponent(json)));
   if (packed.length > 28000) return null;
-  return `${window.location.origin}/builder#m=${packed}`;
+  return `${window.location.origin}/#m=${packed}`;
+}
+
+/** A short link, when the deployment has a store for one. Falls back to the
+ *  fragment, and says which one came back so the caller can be honest about
+ *  whether anything left the browser. */
+export async function shareLink(project, { ttl } = {}) {
+  const fragment = fragmentLink(project);
+  if (fragment) return { url: fragment, kind: "fragment" };
+
+  try {
+    const res = await fetch("/api/share", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ project, ttl }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return {
+        error:
+          data.code === "no_backend"
+            ? "This mockup is too big for a link, and short links are not set up on this deployment. Download the project file instead."
+            : (data.error ?? "The link could not be made."),
+      };
+    }
+    return { url: `${window.location.origin}/s/${data.id}`, kind: "short", expiresAt: data.expiresAt };
+  } catch {
+    return { error: "The link could not be made — the deployment did not answer." };
+  }
 }
 
 export function readShareLink(hash) {

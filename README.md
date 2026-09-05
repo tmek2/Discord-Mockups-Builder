@@ -24,11 +24,21 @@ Live at **[mockups.gatorsys.xyz](https://mockups.gatorsys.xyz)**.
 - **As much of the client as you want.** Messages alone, the channel with its
   header and message box, or the whole window with the server rail, the channel
   sidebar and the member list.
-- **Export.** A PNG at up to 3×, the project file, the message JSON for a bot to
-  send, or a share link that carries the whole mockup in its fragment and never
-  reaches the server.
-- **Saved as you type**, in the browser. Sign in with the same Discord account
-  you use for Gator and it is backed up to the cloud as well.
+- **JSON both ways.** Copy the payload a bot would send, or paste one in and
+  the mockup rebuilds from it — content, embeds with fields, containers,
+  sections, galleries, separators, files, button rows and select menus. Works
+  with a webhook body, a bot payload or a Discohook export.
+- **Export.** A PNG at up to 3×, the project file, or the message JSON.
+- **Backups, in three tiers.** The working copy is written to the browser on
+  every change and restored when you come back. Named backups are copies you
+  make on purpose. Automatic snapshots are taken while you work and pruned to
+  the last twelve, so "I pasted over everything" is recoverable. Sign in and a
+  copy is kept on the deployment as well — the only one that survives a cleared
+  browser or a different machine.
+- **Share links.** A fragment link carries the whole mockup after the `#`,
+  which browsers never send anywhere, so nothing leaves the two people who have
+  it. Past about 28k it becomes a short link with a week's expiry instead,
+  which is also the one you can read out.
 
 ## How it moves
 
@@ -90,7 +100,7 @@ want the account and the cloud copy.
 | `AUTH_URL` | on custom domains | The deployment's own origin, e.g. `https://mockups.gatorsys.xyz`. |
 | `DISCORD_CLIENT_ID` | for sign-in | The Discord application's client id. |
 | `DISCORD_CLIENT_SECRET` | for sign-in | The Discord application's client secret. |
-| `MONGODB_URI` | for cloud backup | A MongoDB connection string. Without it the editor still saves locally and says the backup is switched off. |
+| `MONGODB_URI` | for cloud backup and short links | A MongoDB connection string. Without it the editor still saves locally, keeps its own backups, and shares by fragment link. |
 | `MONGODB_DB` | no | Database name. Defaults to `gator-mockups`. |
 
 The Discord application needs
@@ -103,12 +113,21 @@ server, so `guilds` would be asking for something never read.
 
 ```
 src/
-  app/          routes: the landing page, the builder, auth and the backup API
-  gator/        the Gator design system: tokens, header, appearance, controls
-  discord/      the renderer — markdown, messages, embeds, components, chrome
-  editor/       the builder — block tree, inspector, panels, palette, exports
-  lib/          the project model, validation, storage, templates
+  app/           `/` is the builder, `/s/[id]` a shared mockup, plus the API
+  components/ui  Gator's own components, copied from gatorsys.xyz unchanged
+  gator/         the design system: tokens, header, appearance, indicator
+  discord/       the renderer — markdown, messages, embeds, components, chrome
+  editor/        the builder — block tree, inspector, panels, JSON, exports
+  lib/           the project model, validation, storage, backups, templates
 ```
+
+There is no landing page. The builder is the site.
+
+`src/components/ui` is copied out of `gatorsys.xyz/src/components/ui` with the
+TypeScript stripped and nothing else changed — same Radix primitives, same
+markup, same Tailwind classes. `--gator-*` is bridged to the landing palette in
+`src/gator/tokens.css`, so a newer version of one of those components can be
+copied across without edits.
 
 `DESIGN-SOURCES.md` records where the Discord values come from and what has
 been measured rather than guessed.

@@ -23,17 +23,36 @@
 
 /* --------------------------------------------------------------- topbar */
 
+/* The document's name, beside the product's.
+ *
+ * It used to sit in the middle of the bar with nothing either side of it,
+ * floating: a centred title is only stable when it is the *only* thing on the
+ * line, and this line has a mark on the left and five controls on the right,
+ * so it drifted as they changed width. It belongs next to the mark, after a
+ * divider, the way every document editor places one — the mark says what the
+ * app is, the divider says "and this is the file", and the name follows.
+ *
+ * The save state is on the same line rather than under it. Stacked, it made
+ * the header two rows tall for one word of reassurance. */
 .e-titlebar {
   display: flex;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
   flex: 0 1 auto;
-  flex-direction: column;
-  gap: 1px;
+}
+.e-titlebar::before {
+  content: "";
+  width: 1px;
+  height: 18px;
+  flex: none;
+  background: var(--g-line-strong);
 }
 
 .e-project-name {
-  width: min(28ch, 34vw);
-  padding: 2px 6px;
+  width: min(24ch, 26vw);
+  min-width: 8ch;
+  padding: 4px 8px;
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
@@ -55,10 +74,11 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding-left: 6px;
+  flex: none;
   color: var(--g-ink-faint);
   font-size: 11px;
   font-weight: 600;
+  white-space: nowrap;
 }
 .e-save[data-saved="true"] {
   color: var(--g-gator);
@@ -88,6 +108,7 @@
    that scrolls. A rail you have to scroll to see all of is a rail whose last
    item nobody finds. */
 .e-sections {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 2px;
@@ -127,9 +148,33 @@
 .e-section:hover {
   color: var(--g-ink);
 }
+/* No background of its own: the blob behind it is the fill, and two of them
+   stacked made the hovered item a shade darker than the blob it sat on. The
+   current one is said in ink and in a bar under it, not in a second fill. */
+.e-section {
+  position: relative;
+  z-index: 1;
+}
 .e-section[data-on="true"] {
-  background: var(--g-accent-soft);
   color: var(--g-accent-ink);
+}
+.e-section[data-on="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--g-accent);
+  transform: translateX(-50%);
+  animation: e-underline 240ms var(--g-ease-out);
+}
+@keyframes e-underline {
+  from {
+    width: 0;
+    opacity: 0;
+  }
 }
 .e-section:active {
   transform: scale(0.94);
@@ -471,6 +516,9 @@
   gap: 2px;
   padding: 0 10px 8px;
 }
+.e-tabs > .g-blob {
+  z-index: 0;
+}
 .e-tabs::after {
   content: "";
   position: absolute;
@@ -505,8 +553,11 @@
 .e-tab:hover {
   color: var(--g-ink);
 }
+.e-tab {
+  position: relative;
+  z-index: 1;
+}
 .e-tab[data-on="true"] {
-  background: var(--g-fill-2);
   color: var(--g-ink);
 }
 .e-tab:active {
@@ -521,6 +572,9 @@
   font-size: 10px;
 }
 
+/* Keyed on the section and tab, so a switch reads as new contents arriving
+   rather than as the panel being repainted in place. Short and small: a panel
+   that slides a long way on every tab press is a panel you wait for. */
 .e-right-body {
   flex: 1;
   min-height: 0;
@@ -529,6 +583,21 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  animation: e-panel-in 260ms var(--g-ease-out);
+}
+@keyframes e-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .e-right-body {
+    animation: none;
+  }
+  .e-section[data-on="true"]::after {
+    animation: none;
+  }
 }
 
 .e-right-foot {

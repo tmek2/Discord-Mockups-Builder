@@ -50,6 +50,17 @@ export async function saveValue(key, value) {
   });
 }
 
+/** Every key in the store, so the backup list can be built without keeping a
+ *  separate index that could drift out of step with what is actually there. */
+export async function listKeys() {
+  const db = await open();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(STORE).objectStore(STORE).getAllKeys();
+    req.onsuccess = () => resolve((req.result ?? []).map(String));
+    req.onerror = () => reject(req.error);
+  });
+}
+
 export async function deleteValue(key) {
   const db = await open();
   return new Promise((resolve, reject) => {

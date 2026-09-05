@@ -6,6 +6,34 @@ const nextConfig = {
      rasterised by html-to-image, which cannot see through a proxying loader —
      so the optimiser is off rather than half-used. */
   images: { unoptimized: true },
+  poweredByHeader: false,
+
+  async headers() {
+    return [
+      {
+        /* The avatar set is 240 files that never change: they are content, not
+           code, so they are not fingerprinted and would otherwise be
+           revalidated on every load. A year, immutable — replacing one means
+           adding a file rather than editing one. */
+        source: "/avatars/:file*",
+        headers: [{ key: "cache-control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
+        source: "/favicon.svg",
+        headers: [{ key: "cache-control", value: "public, max-age=604800" }],
+      },
+      {
+        /* Nothing about a mockup should be cached by a shared proxy: a project
+           is somebody's unpublished work, and the backup endpoints answer
+           differently per account. */
+        source: "/api/mockups/:path*",
+        headers: [
+          { key: "cache-control", value: "no-store" },
+          { key: "x-content-type-options", value: "nosniff" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

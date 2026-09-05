@@ -41,14 +41,17 @@ import {
 } from "@tabler/icons-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SiteNav } from "@/gator/site-nav";
+import { Blob, useBlob } from "@/gator/blob";
 import { DiscordSurface } from "@/discord/surface";
 import { blankProject, newMessage, reid, uid } from "@/lib/model";
 import { TEMPLATES } from "@/lib/templates";
 import { loadValue, saveValue } from "@/lib/storage";
 import { migrate, validProject } from "@/lib/validate";
 import { Inspector, TABS } from "./inspector";
-import { CanvasPanel, CloudPanel, EmojiPanel, UsersPanel } from "./panels";
+import { CanvasPanel, EmojiPanel, UsersPanel } from "./panels";
+import { BackupsPanel } from "./backups-panel";
 import { exportMessageJson, exportPng, exportProject, messageJson, readShareLink, shareLink } from "./export";
+import { AUTO_EVERY_MS, takeSnapshot } from "@/lib/backups";
 import { Palette } from "./palette";
 import { useCanvasGestures } from "./use-canvas";
 import { useOverlay } from "./use-overlay";
@@ -60,7 +63,7 @@ const SECTIONS = [
   { id: "users", label: "Members", Icon: IconUsers },
   { id: "emojis", label: "Emoji", Icon: IconMoodSmile },
   { id: "canvas", label: "Canvas", Icon: IconPalette },
-  { id: "cloud", label: "Saved", Icon: IconCloud },
+  { id: "backups", label: "Backups", Icon: IconCloud },
 ];
 
 /* A hover label, with the shortcut where there is one. Every control that is
@@ -81,7 +84,7 @@ function Hint({ label, keys, children }) {
 const STORE_KEY = "project";
 const SLUG_KEY = "slug";
 
-export function Builder({ user, canSignIn = true }) {
+export function Builder({ user, canSignIn = true, shared = null }) {
   const [project, setProject] = useState(blankProject);
   const [slug, setSlug] = useState("draft");
   const [past, setPast] = useState([]);
@@ -115,13 +118,16 @@ export function Builder({ user, canSignIn = true }) {
     /* A share link wins over what is in storage: somebody who opened a link
        meant to look at that, and the draft they had is still in IndexedDB
        under the same key, untouched. */
-    const shared = readShareLink(window.location.hash);
-    if (shared && validProject(migrate(shared))) {
-      setProject(migrate(shared));
+    /* A shared mockup opens as a working copy: there is no way to write back
+       through a share link, and letting two people believe they are editing
+       the same thing would be worse than not sharing at all. */
+    const incoming = shared ?? readShareLink(window.location.hash);
+    if (incoming && validProject(migrate(incoming))) {
+      setProject(migrate(incoming));
       setSlug(uid().slice(0, 8));
       setLoaded(true);
-      notify("Opened a shared mockup. Saving keeps it as your own copy.");
-      window.history.replaceState(null, "", window.location.pathname);
+      notify("Opened a shared mockup. It is your own copy from here.");
+      if (!shared) window.history.replaceState(null, "", window.location.pathname);
       return () => {
         alive = false;
       };
@@ -144,7 +150,7 @@ export function Builder({ user, canSignIn = true }) {
     return () => {
       alive = false;
     };
-  }, [notify, fail]);
+  }, [notify, fail, shared]);
 
   /* Autosave. Debounced, because a keystroke is a state change and writing
      the whole project on every one of them is a transaction per character. */
@@ -158,6 +164,23 @@ export function Builder({ user, canSignIn = true }) {
     }, 500);
     return () => window.clearTimeout(timer);
   }, [project, slug, loaded, fail]);
+
+  /* An automatic snapshot, on a timer, and only when something has actually
+     changed since the last one. A snapshot per interval regardless would fill
+     the list with twelve copies of a mockup nobody touched. */
+  const snapshotted = useRef("");
+  useEffect(() => {
+    if (!loaded) return undefined;
+    const tick = window.setInterval(() => {
+      const stamp = JSON.stringify(project);
+      if (stamp === snapshotted.current) return;
+      snapshotted.current = stamp;
+      takeSnapshot(project).catch(() => {
+        // A full disk should cost the snapshot, not the session.
+      });
+    }, AUTO_EVERY_MS);
+    return () => window.clearInterval(tick);
+  }, [project, loaded]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -331,16 +354,20 @@ export function Builder({ user, canSignIn = true }) {
   }, [fail, notify, project]);
 
   const doShare = useCallback(async () => {
-    const link = shareLink(project);
-    if (!link) {
-      fail("This mockup is too big for a link. Download the project file, or back it up to the cloud.");
+    const { url, kind, error } = await shareLink(project);
+    if (error) {
+      fail(error);
       return;
     }
     try {
-      await navigator.clipboard.writeText(link);
-      notify("Link copied. It carries the whole mockup and never touches the server.");
+      await navigator.clipboard.writeText(url);
+      notify(
+        kind === "fragment"
+          ? "Link copied. It carries the whole mockup and never touches the server."
+          : "Short link copied. It works for a week.",
+      );
     } catch {
-      fail("Could not reach the clipboard.");
+      fail(`Could not reach the clipboard. The link is ${url}`);
     }
   }, [fail, notify, project]);
 
@@ -385,6 +412,11 @@ export function Builder({ user, canSignIn = true }) {
   const shown = zoomShown * fit;
 
   const rows = useReorder({ count: project.messages.length, onMove: reorder });
+  /* The same travelling indicator the site's header has, twice: on the rail
+     and on the tabs. One shape moving reads as one control; five backgrounds
+     fading in and out read as five. */
+  const railBlob = useBlob(section);
+  const tabBlob = useBlob(tab);
   const sheet = useOverlay(templatesOpen, 200);
 
   /* --------------------------------------------------------- shortcuts */
@@ -430,20 +462,36 @@ export function Builder({ user, canSignIn = true }) {
 
   return (
     <div className="e-app">
-      <SiteNav user={user} canSignIn={canSignIn} compact links={false}>
-        <div className="e-titlebar">
-          <input
-            className="e-project-name"
-            aria-label="Mockup name"
-            value={project.name}
-            onChange={(e) => commit((p) => ({ ...p, name: e.target.value }))}
-          />
-          <span className="e-save" data-saved={savedLocally ? "true" : "false"}>
-            {savedLocally ? <IconCheck size={13} /> : <IconDeviceFloppy size={13} />}
-            {savedLocally ? "Saved in this browser" : "Saving…"}
-          </span>
-        </div>
-
+      <SiteNav
+        user={user}
+        canSignIn={canSignIn}
+        compact
+        links={false}
+        leading={
+          <div className="e-titlebar">
+            <Hint label="Rename this mockup">
+              <input
+                className="e-project-name"
+                aria-label="Mockup name"
+                value={project.name}
+                onChange={(e) => commit((p) => ({ ...p, name: e.target.value }))}
+              />
+            </Hint>
+            <Hint
+              label={
+                savedLocally
+                  ? "Kept in this browser and restored when you come back"
+                  : "Writing to this browser"
+              }
+            >
+              <span className="e-save" data-saved={savedLocally ? "true" : "false"}>
+                {savedLocally ? <IconCheck size={13} /> : <IconDeviceFloppy size={13} />}
+                {savedLocally ? "Saved" : "Saving…"}
+              </span>
+            </Hint>
+          </div>
+        }
+      >
         <div className="e-topbar-actions e-no-export">
           <Hint label="Undo" keys="⌘Z">
             <button type="button" className="e-icon-btn" onClick={undo} disabled={!past.length} aria-label="Undo">
@@ -476,7 +524,8 @@ export function Builder({ user, canSignIn = true }) {
       <div className="e-body" data-pane={pane}>
         {/* ------------------------------------------------------ left */}
         <aside className="e-left">
-          <nav className="e-sections" aria-label="Sections">
+          <nav className="e-sections" aria-label="Sections" {...railBlob.boxProps}>
+            <Blob />
             {SECTIONS.map(({ id, label, Icon }) => (
               <button
                 key={id}
@@ -484,6 +533,7 @@ export function Builder({ user, canSignIn = true }) {
                 className="e-section"
                 data-on={section === id ? "true" : "false"}
                 onClick={() => setSection(id)}
+                {...railBlob.register(id)}
               >
                 <Icon size={17} stroke={1.8} />
                 <span>{label}</span>
@@ -704,7 +754,8 @@ export function Builder({ user, canSignIn = true }) {
           </header>
 
           {section === "messages" ? (
-            <nav className="e-tabs" aria-label="Message parts">
+            <nav className="e-tabs" aria-label="Message parts" {...tabBlob.boxProps}>
+              <Blob />
               {TABS.map((t) => (
                 <button
                   key={t}
@@ -712,6 +763,7 @@ export function Builder({ user, canSignIn = true }) {
                   className="e-tab"
                   data-on={tab === t ? "true" : "false"}
                   onClick={() => setTab(t)}
+                  {...tabBlob.register(t)}
                 >
                   {t}
                   {t === "Embeds" && message?.embeds?.length ? (
@@ -725,7 +777,7 @@ export function Builder({ user, canSignIn = true }) {
             </nav>
           ) : null}
 
-          <div className="e-right-body">
+          <div className="e-right-body" key={`${section}:${tab}`}>
             {section === "messages" ? (
               <Inspector
                 tab={tab}
@@ -742,12 +794,17 @@ export function Builder({ user, canSignIn = true }) {
             ) : section === "canvas" ? (
               <CanvasPanel project={project} commit={commit} onError={fail} onChrome={setChrome} />
             ) : (
-              <CloudPanel
+              <BackupsPanel
                 project={project}
                 slug={slug}
                 user={user}
                 canSignIn={canSignIn}
-                onLoad={load}
+                savedLocally={savedLocally}
+                onLoad={(next, nextSlug, action) => {
+                  if (action === "import") importer.current?.click();
+                  else if (action === "export") exportProject(project);
+                  else load(next, nextSlug);
+                }}
                 onError={fail}
                 onNotify={notify}
               />

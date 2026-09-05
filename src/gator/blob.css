@@ -1,0 +1,44 @@
+.g-blob {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: var(--blob-w, 0);
+  height: var(--blob-h, 0);
+  transform: translate(var(--blob-x, 0), var(--blob-y, 0));
+  opacity: 0;
+  pointer-events: none;
+  /* Slightly overshooting, because the blob is an object being thrown between
+     positions rather than a value being interpolated. */
+  transition:
+    transform 460ms cubic-bezier(0.34, 1.42, 0.64, 1),
+    width 300ms cubic-bezier(0.34, 1.42, 0.64, 1),
+    height 300ms cubic-bezier(0.34, 1.42, 0.64, 1),
+    opacity 200ms var(--g-ease-state);
+}
+[data-lit="true"] > .g-blob {
+  opacity: 1;
+}
+
+/* The skin is separate from the travel so the two transforms do not fight:
+   the outer element moves, this one squashes. */
+.g-blob-skin {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--g-r-inset);
+  background: var(--g-fill-2);
+  transition: transform 200ms var(--g-ease-out);
+}
+[data-moving="true"] > .g-blob > .g-blob-skin {
+  transform: scaleX(1.1) scaleY(0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g-blob,
+  .g-blob-skin {
+    transition-duration: 1ms;
+  }
+  [data-moving="true"] > .g-blob > .g-blob-skin {
+    transform: none;
+  }
+}

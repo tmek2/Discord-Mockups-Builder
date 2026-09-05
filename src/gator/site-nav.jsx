@@ -30,7 +30,7 @@ const LINKS = [
    wrong link for a frame. Picking per environment is the usual way out. */
 const useMeasure = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-export function SiteNav({ user, canSignIn = true, compact = false, links = true, children }) {
+export function SiteNav({ user, canSignIn = true, compact = false, links = true, leading, children }) {
   const here = usePathname();
   const box = useRef(null);
   const tabs = useRef(new Map());
@@ -121,6 +121,13 @@ export function SiteNav({ user, canSignIn = true, compact = false, links = true,
             })}
           </nav>
         ) : null}
+
+        {/* Anything belonging to the document rather than to the app sits
+            here, before the spacer: after the mark, on the left, where a
+            document editor puts the name of the thing being edited. Put after
+            the spacer it drifts into the middle of the bar and moves whenever
+            a control on the right changes width. */}
+        {leading}
 
         <span className="g-nav-spacer" />
 
