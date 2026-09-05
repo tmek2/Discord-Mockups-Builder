@@ -1,64 +1,53 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@/auth";
-import { mockups, mongoConfigured } from "@/lib/mongo";
+import { MAX_PACKED, store, storeConfigured } from "@/lib/store";
 import { validProject } from "@/lib/validate";
-import { db } from "@/lib/mongo";
 
 /* Share links.
  *
  * A short id that resolves to a mockup, with an expiry — Discohook's model,
- * and the right one for this: a link you paste into a channel should stop
- * working eventually rather than sitting in a scrollback forever pointing at
- * something you have since changed.
+ * and the right one here: a link pasted into a channel should stop working
+ * eventually rather than sitting in a scrollback pointing at something you
+ * have since changed.
  *
- * The fragment link is still there and still the default when this is not
- * configured: it carries the whole mockup in the URL and never reaches a
- * server at all. This exists because a fragment cannot hold a mockup with
- * pasted images in it, and because a short link is the one you can read out.
+ * The fragment link is still the default and still the one that keeps the most
+ * private: it carries the mockup after the `#`, which browsers never send
+ * anywhere. This exists because a fragment cannot hold a mockup with pasted
+ * images in it, and because a short link is the one you can read out.
  *
- * No account is needed to make one. A share is not a possession — it is a
- * copy you handed somebody — so tying it to sign-in would only stop people
- * sharing.
+ * No account needed. A share is not a possession — it is a copy you handed
+ * somebody — so requiring sign-in would only stop people sharing.
  */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_BYTES = 6 * 1024 * 1024;
-/** A week by default; four weeks at most, five minutes at least. */
 const DEFAULT_TTL = 7 * 24 * 3600;
 const MIN_TTL = 300;
 const MAX_TTL = 28 * 24 * 3600;
 
 /* Unambiguous by construction: no 0/O, no 1/l/I. A share id is a thing people
-   read off a screen and type, so the characters that look like each other are
-   simply not in the alphabet. */
+   read off a screen and type back in, so the characters that look like each
+   other are simply not in the alphabet.
+   31 characters is not a power of two, so `% length` over raw bytes would bias
+   the first few. Rejection sampling instead — cheap, and the bias would be a
+   real (if small) reduction in how many ids there are. */
 const ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+const LIMIT = 256 - (256 % ALPHABET.length);
 
 function shortId(length = 8) {
-  const bytes = crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join("");
-}
-
-async function shares() {
-  const database = await db();
-  const collection = database.collection("shares");
-  if (!globalThis.__gatorSharesIndexed) {
-    globalThis.__gatorSharesIndexed = true;
-    await collection
-      .createIndexes([
-        { key: { shareId: 1 }, name: "share_id", unique: true },
-        // Mongo drops the document itself once `expiresAt` passes, so an
-        // expired share needs no sweeping job and cannot be read late.
-        { key: { expiresAt: 1 }, name: "ttl", expireAfterSeconds: 0 },
-      ])
-      .catch(() => {});
+  let out = "";
+  while (out.length < length) {
+    for (const byte of crypto.getRandomValues(new Uint8Array(length))) {
+      if (byte >= LIMIT) continue;
+      out += ALPHABET[byte % ALPHABET.length];
+      if (out.length === length) break;
+    }
   }
-  return collection;
+  return out;
 }
 
 export async function POST(request) {
-  if (!mongoConfigured()) {
+  if (!storeConfigured()) {
     return NextResponse.json(
       { error: "Short links are not configured on this deployment.", code: "no_backend" },
       { status: 503 },
@@ -71,44 +60,33 @@ export async function POST(request) {
   } catch {
     return NextResponse.json({ error: "Malformed request." }, { status: 400 });
   }
-
-  const project = body?.project;
-  if (!validProject(project)) {
+  if (!validProject(body?.project)) {
     return NextResponse.json({ error: "That is not a valid mockup." }, { status: 422 });
   }
 
-  const size = Buffer.byteLength(JSON.stringify(project));
-  if (size > MAX_BYTES) {
-    return NextResponse.json(
-      { error: `This mockup is ${(size / 1024 / 1024).toFixed(1)} MB, over the 6 MB share limit.` },
-      { status: 413 },
-    );
-  }
-
   const ttl = Math.min(MAX_TTL, Math.max(MIN_TTL, Number(body.ttl) || DEFAULT_TTL));
-  const user = await currentUser();
 
   try {
-    const collection = await shares();
     // Retry on the vanishingly unlikely collision rather than trusting it not
-    // to happen; the unique index is what makes that check meaningful.
+    // to happen; the store refuses to overwrite, which is what makes the check
+    // meaningful rather than decorative.
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      const shareId = shortId(attempt < 3 ? 8 : 10);
-      try {
-        await collection.insertOne({
-          shareId,
-          project,
-          ownerId: user?.id ?? null,
-          bytes: size,
-          createdAt: new Date(),
-          expiresAt: new Date(Date.now() + ttl * 1000),
-        });
-        return NextResponse.json({ id: shareId, expiresAt: Date.now() + ttl * 1000 });
-      } catch (error) {
-        if (error?.code !== 11000) throw error;
+      const id = shortId(attempt < 3 ? 8 : 10);
+      const result = await store().putShare(id, body.project, ttl);
+      if (result.ok) return NextResponse.json({ id, expiresAt: result.expiresAt });
+      if (result.error === "too-large") {
+        return NextResponse.json(
+          {
+            error: `This mockup is ${(result.bytes / 1048576).toFixed(1)} MB even compressed, over the ${(
+              MAX_PACKED / 1048576
+            ).toFixed(0)} MB share limit.`,
+          },
+          { status: 413 },
+        );
       }
+      if (result.error !== "taken") break;
     }
-    return NextResponse.json({ error: "Could not allocate a link. Try again." }, { status: 503 });
+    return NextResponse.json({ error: "Could not make a link. Try again." }, { status: 503 });
   } catch {
     return NextResponse.json({ error: "Could not reach the share store." }, { status: 502 });
   }

@@ -1,34 +1,22 @@
 import { NextResponse } from "next/server";
 import { authConfigured, currentUser } from "@/auth";
-import { mockups, mongoConfigured } from "@/lib/mongo";
+import { MAX_PACKED, PER_USER, store, storeConfigured } from "@/lib/store";
 import { validProject } from "@/lib/validate";
 
-/* The cloud backup.
+/* The cloud copy.
  *
  * Local storage is the primary copy and this is the second one — which is why
  * every failure here is reported as a failure to *back up* rather than as a
  * failure to save. The editor keeps the work either way.
  *
  * A mockup belongs to a Discord account and to nothing else. There is no
- * sharing, no server scoping and no public read: the owner id comes from the
- * session on every request and is the only thing any query filters on, so a
- * document cannot be reached by guessing its id.
+ * sharing, no server scoping and no public read: the owner comes from the
+ * session on every request and is part of every key, so a document cannot be
+ * reached by guessing an id.
  */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-/* A project with images inlined can be large, and Mongo's document ceiling is
-   16 MB. Refusing at 6 leaves room for the wrapper and gives a message worth
-   reading instead of a driver error. */
-const MAX_BYTES = 6 * 1024 * 1024;
-
-const LIST_FIELDS = { projection: { project: 0 } };
-
-async function requireUser() {
-  const user = await currentUser();
-  return user?.id ? { id: user.id, name: user.name ?? null } : null;
-}
 
 function unavailable() {
   return NextResponse.json(
@@ -37,36 +25,27 @@ function unavailable() {
   );
 }
 
+async function owner() {
+  const user = await currentUser();
+  return user?.id ?? null;
+}
+
 export async function GET() {
-  if (!mongoConfigured() || !authConfigured) return unavailable();
-  const user = await requireUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!storeConfigured() || !authConfigured) return unavailable();
+  const id = await owner();
+  if (!id) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
 
   try {
-    const collection = await mockups();
-    const rows = await collection
-      .find({ ownerId: user.id }, LIST_FIELDS)
-      .sort({ updatedAt: -1 })
-      .limit(100)
-      .toArray();
-    return NextResponse.json({
-      mockups: rows.map((row) => ({
-        id: String(row._id),
-        slug: row.slug,
-        name: row.name,
-        updatedAt: row.updatedAt,
-        messages: row.messages ?? 0,
-      })),
-    });
+    return NextResponse.json({ mockups: await store().list(id), limit: PER_USER });
   } catch {
     return NextResponse.json({ error: "Could not reach the backup store." }, { status: 502 });
   }
 }
 
 export async function POST(request) {
-  if (!mongoConfigured() || !authConfigured) return unavailable();
-  const user = await requireUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!storeConfigured() || !authConfigured) return unavailable();
+  const id = await owner();
+  if (!id) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
 
   let body;
   try {
@@ -75,51 +54,27 @@ export async function POST(request) {
     return NextResponse.json({ error: "Malformed request." }, { status: 400 });
   }
 
-  const project = body?.project;
-  if (!validProject(project)) {
+  if (!validProject(body?.project)) {
     return NextResponse.json({ error: "That is not a valid mockup." }, { status: 422 });
   }
-
-  const size = Buffer.byteLength(JSON.stringify(project));
-  if (size > MAX_BYTES) {
-    return NextResponse.json(
-      {
-        error: `This mockup is ${(size / 1024 / 1024).toFixed(1)} MB, over the 6 MB backup limit. Link images by URL rather than pasting them in, or keep this one as a downloaded file.`,
-      },
-      { status: 413 },
-    );
-  }
-
-  /* The slug is the editor's own id for the project, so saving twice updates
-     one document rather than filling the list with copies. It is scoped to the
-     owner by the unique index, so two people can hold the same slug. */
   const slug = typeof body.slug === "string" && body.slug ? body.slug.slice(0, 80) : null;
   if (!slug) return NextResponse.json({ error: "Missing mockup id." }, { status: 400 });
 
   try {
-    const collection = await mockups();
-    const now = Date.now();
-    await collection.updateOne(
-      { ownerId: user.id, slug },
-      {
-        $set: {
-          ownerId: user.id,
-          slug,
-          name: String(project.name ?? "Untitled mockup").slice(0, 120),
-          project,
-          messages: project.messages?.length ?? 0,
-          bytes: size,
-          updatedAt: now,
+    const result = await store().put(id, slug, body.project);
+    if (result.error === "too-large") {
+      return NextResponse.json(
+        {
+          error: `This mockup is ${(result.bytes / 1048576).toFixed(1)} MB even compressed, over the ${(
+            MAX_PACKED / 1048576
+          ).toFixed(0)} MB limit. Link images by URL rather than pasting them in, or keep this one as a downloaded file.`,
         },
-        $setOnInsert: { createdAt: now },
-      },
-      { upsert: true },
-    );
-    return NextResponse.json({ ok: true, slug, updatedAt: now });
-  } catch (error) {
-    if (error?.code === 11000) {
-      return NextResponse.json({ error: "That mockup is already being saved." }, { status: 409 });
+        { status: 413 },
+      );
     }
+    if (result.error) return NextResponse.json({ error: "Could not reach the backup store." }, { status: 502 });
+    return NextResponse.json({ ok: true, slug, updatedAt: result.updatedAt });
+  } catch {
     return NextResponse.json({ error: "Could not reach the backup store." }, { status: 502 });
   }
 }

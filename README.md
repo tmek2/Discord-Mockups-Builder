@@ -100,14 +100,49 @@ want the account and the cloud copy.
 | `AUTH_URL` | on custom domains | The deployment's own origin, e.g. `https://mockups.gatorsys.xyz`. |
 | `DISCORD_CLIENT_ID` | for sign-in | The Discord application's client id. |
 | `DISCORD_CLIENT_SECRET` | for sign-in | The Discord application's client secret. |
-| `MONGODB_URI` | for cloud backup and short links | A MongoDB connection string. Without it the editor still saves locally, keeps its own backups, and shares by fragment link. |
-| `MONGODB_DB` | no | Database name. Defaults to `gator-mockups`. |
+| `REDIS_URL` | for cloud backup and short links | The same Redis the rest of Gator uses. This is the recommended store — see below. |
+| `MONGODB_URI` | alternative to Redis | Only used when `MONGODB_COLLECTION` is also set. |
+| `MONGODB_COLLECTION` | with `MONGODB_URI` | The name of an **existing** collection to share. Nothing is created. |
+| `MONGODB_DB` | no | Database name. Defaults to the one in the connection string. |
 
 The Discord application needs
 `https://mockups.gatorsys.xyz/api/auth/callback/discord` in its OAuth redirects
 (and `http://localhost:3000/api/auth/callback/discord` for local work). The
 only scope asked for is `identify` — a mockup belongs to a person, not to a
 server, so `guilds` would be asking for something never read.
+
+## Where the cloud copy lives
+
+The Gator cluster is at its collection ceiling, and Atlas counts collections
+*and* indexes together toward one recommended maximum — so "just add a small
+collection" costs a collection plus every index it would need. This app asks
+for none of that.
+
+**Redis is the default store**, and the one to use. It is the same instance the
+site already runs for its own caching, it costs nothing in Mongo, and it is the
+right shape for the job: the values are opaque blobs fetched by exact key.
+Everything is namespaced under `gm:` so it cannot collide with anything else in
+there, listing is one ordered range read rather than a `SCAN` over a keyspace
+shared with the bot, and share links get a real TTL instead of a sweeper.
+
+**Mongo is supported and still adds no collection.** Set `MONGODB_COLLECTION`
+to a collection that already exists and everything goes in there: every
+document written carries `_gm: 1` and every query filters on it, so this app
+cannot read, count or delete anything it did not write, and whatever owns that
+collection keeps working because its queries never ask for `_gm`. No index is
+created either — the queries are all "one owner" or "one share id" over a set
+kept small by the per-account cap.
+
+Either way, projects are stored **Brotli-compressed** — a mockup is JSON full
+of repeated keys with base64 images in it, which compresses about 95%, so a
+5 KB project is 264 bytes on the wire and in storage. Each account keeps its 60
+most recent cloud copies; older ones fall off rather than newer ones being
+refused, because somebody at the cap is still working and the save they just
+made is the one they care about.
+
+None of it is the primary copy. The browser holds the working copy and the
+backups; this is the second one, and every path degrades to "no cloud" rather
+than failing a save.
 
 ## Layout
 

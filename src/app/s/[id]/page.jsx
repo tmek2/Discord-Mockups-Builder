@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { db, mongoConfigured } from "@/lib/mongo";
+import { store, storeConfigured } from "@/lib/store";
 import { authConfigured, currentUser } from "@/auth";
 import { Builder } from "@/editor/builder";
 import { validProject } from "@/lib/validate";
@@ -17,11 +17,11 @@ export const metadata = { title: "Shared mockup" };
  */
 export default async function SharedMockup({ params }) {
   const { id } = await params;
-  if (!mongoConfigured() || !/^[a-z0-9]{6,16}$/.test(id ?? "")) notFound();
+  if (!storeConfigured() || !/^[a-z0-9]{6,16}$/.test(id ?? "")) notFound();
 
   let project = null;
   try {
-    const row = await (await db()).collection("shares").findOne({ shareId: id });
+    const row = await store().getShare(id);
     if (row && validProject(row.project)) project = row.project;
   } catch {
     project = null;
