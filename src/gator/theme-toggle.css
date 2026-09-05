@@ -1,0 +1,216 @@
+/* The appearance control.
+ *
+ * One block, at the size of the search field and the profile chip beside it,
+ * so the trailing group is a row of three equal controls rather than a slab, a
+ * field and a chip. See `theme-toggle.tsx` for why it is one press rather than
+ * three targets, and why all three settings are still reachable.
+ */
+
+.g-theme {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.g-theme-block {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--g-line);
+  border-radius: var(--g-r-pill);
+  background: var(--g-fill);
+  color: var(--g-ink-faint);
+  cursor: pointer;
+  transition:
+    border-color var(--g-fast) var(--g-ease-state),
+    background-color var(--g-fast) var(--g-ease-state),
+    color var(--g-fast) var(--g-ease-state),
+    transform 160ms var(--g-ease-out);
+}
+@media (hover: hover) {
+  .g-theme-block:hover {
+    border-color: var(--g-line-strong);
+    background: var(--g-fill-2);
+    color: var(--g-ink);
+  }
+}
+.g-theme-block:active {
+  transform: scale(0.94);
+}
+
+/* --------------------------------------------------------------- the icons */
+
+/* All three stacked in one 16px cell, one of them shown. A grid rather than
+   absolute positioning, so the button is sized by its contents and the icons
+   are centred by the same rule that centres anything else here. */
+.g-theme-icons {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+}
+.g-theme-icon {
+  display: grid;
+  grid-area: 1 / 1;
+  place-items: center;
+  /* Out: turned a little and small. The one coming in runs the same values
+     backwards, so they pass through each other rather than crossfading. */
+  transform: rotate(-70deg) scale(0.4);
+  opacity: 0;
+  transition:
+    transform 320ms var(--g-ease-out),
+    opacity 200ms var(--g-ease-state);
+}
+.g-theme-icon[data-on="true"] {
+  transform: none;
+  opacity: 1;
+}
+.g-theme-icon svg {
+  display: block;
+}
+/* Until the stored setting has been read there is no honest icon to show. */
+.g-theme[data-ready="false"] .g-theme-icon {
+  opacity: 0;
+}
+
+/* A press turns the whole cell once, which is what makes the swap read as one
+   movement instead of two shapes exchanging places. */
+.g-theme[data-turning="true"] .g-theme-icons {
+  animation: g-theme-turn 320ms var(--g-ease-out);
+}
+@keyframes g-theme-turn {
+  from {
+    transform: rotate(-38deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+/* --------------------------------------------------------------- the label */
+
+/* Two lines: what the appearance is now, and what one more press gives. One
+   icon cannot say both, and the second line is the whole reason a cycling
+   control is usable at all. */
+.g-theme-tip {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 10px;
+  border: 1px solid var(--mac-hairline, var(--g-line));
+  border-radius: 9px;
+  background: var(--g-raise-2);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -3px);
+  transition:
+    opacity 140ms var(--g-ease-state),
+    transform 220ms var(--g-ease-out);
+}
+/* `:focus-within`, not `:focus-visible`, was why the label stuck.
+ *
+ * Clicking the block gives it focus, and `:focus-within` matches a mouse
+ * click as readily as a Tab — so the tip stayed open after every press until
+ * the focus moved somewhere else, which is what "stuck until I click
+ * elsewhere" was. `:focus-visible` is the same affordance for the keyboard
+ * user it exists for, and silent for the pointer user who has just pressed
+ * the thing and can see what happened.
+ *
+ * The hover half is gated on a device that has a hover: a touch screen applies
+ * `:hover` on tap and keeps it until you tap something else, which is the same
+ * stuck label by a different route. */
+@media (hover: hover) {
+  .g-theme:hover .g-theme-tip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.g-theme:focus-visible .g-theme-tip,
+.g-theme:has(:focus-visible) .g-theme-tip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+/* Nothing to say before the setting has been read. */
+.g-theme[data-ready="false"] .g-theme-tip {
+  opacity: 0;
+}
+
+.g-theme-tip-now {
+  color: var(--g-ink);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  line-height: 1.2;
+}
+.g-theme-tip-next {
+  color: var(--g-ink-faint);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+:root[data-theme="light"] .g-theme-tip {
+  box-shadow: 0 6px 20px rgba(80, 35, 50, 0.16);
+}
+/* Written out again rather than grouped, so an explicit light choice on a dark
+   device still wins. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .g-theme-tip {
+    box-shadow: 0 6px 20px rgba(80, 35, 50, 0.16);
+  }
+}
+
+/* ----------------------------------------------------------- the wipe */
+
+/* A view transition cross-fades the two snapshots by default, which is a
+   dissolve of the whole page and not what the circle is for. Turned off while
+   the appearance is changing, and only then: route changes run
+   through the same pseudo-elements, and an unscoped rule would flatten those
+   too. `data-wipe` is set on the root for the length of the transition and
+   removed whether it finishes or fails.
+
+   `mix-blend-mode: normal` because the default is `plus-lighter`, which is
+   built for a cross-fade and turns the overlap of two full-page snapshots
+   white. */
+:root[data-wipe="true"]::view-transition-old(root),
+:root[data-wipe="true"]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+/* The old appearance stays put and the new one opens over it. Without this the
+   new snapshot is painted under the old and the circle reveals nothing. */
+:root[data-wipe="true"]::view-transition-new(root) {
+  z-index: 1;
+}
+:root[data-wipe="true"]::view-transition-old(root) {
+  z-index: 0;
+}
+
+/* A finger has no hover, so the label would only ever appear stuck after a
+   press. The `aria-label` still carries the whole sentence. */
+@media (hover: none) {
+  .g-theme-tip {
+    display: none;
+  }
+}
+
+/* A control that springs is a control somebody has asked not to see spring.
+   It still changes; it just gets there directly. */
+@media (prefers-reduced-motion: reduce) {
+  .g-theme-icon,
+  .g-theme-tip,
+  .g-theme-block {
+    transition-duration: 1ms;
+  }
+  .g-theme[data-turning="true"] .g-theme-icons {
+    animation: none;
+  }
+}
