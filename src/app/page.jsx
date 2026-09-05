@@ -1,9 +1,9 @@
 import { authConfigured, currentUser } from "@/auth";
-import { Landing } from "@/gator/landing";
+import { Builder } from "@/editor/builder";
 
-/* The session is read on the server so the header arrives already knowing
-   whether there is an account, rather than drawing "Sign in" and then swapping
-   it for a face a moment later. */
+/* The builder is the site. There is no landing page and no marketing route:
+   somebody arriving here came to draw a message, and a page in front of that
+   is a page between them and the thing they came for. */
 export default async function Home() {
-  return <Landing user={await currentUser()} canSignIn={authConfigured} />;
+  return <Builder user={await currentUser()} canSignIn={authConfigured} />;
 }

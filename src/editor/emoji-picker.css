@@ -1,64 +1,155 @@
+/* The picker.
+ *
+ * Sized to be scanned: seven category tabs across the top, a grid wide enough
+ * that a row is a row rather than a column, and a height that stops before it
+ * becomes a page. */
+
+.e-emoji-pop {
+  width: 328px;
+  padding: 0;
+  overflow: hidden;
+  border-color: var(--gator-border-strong);
+  background: var(--g-sheet-ground);
+}
+
+.e-emoji {
+  display: flex;
+  flex-direction: column;
+  max-height: 420px;
+}
+
+.e-emoji-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid var(--g-line);
+  color: var(--g-ink-faint);
+}
+.e-emoji-search svg {
+  position: absolute;
+  left: 21px;
+  pointer-events: none;
+}
+.e-emoji-input {
+  height: 34px;
+  padding-left: 30px;
+  font-size: 13px;
+}
+
+.e-emoji-tabs {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--g-line);
+}
+.e-emoji-tab {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.5;
+  transition:
+    background-color var(--g-fast) var(--g-ease-state),
+    opacity var(--g-fast) var(--g-ease-state),
+    transform 120ms var(--g-ease-out);
+}
+.e-emoji-tab:hover {
+  background: var(--g-fill-2);
+  opacity: 0.85;
+}
+.e-emoji-tab[data-on="true"] {
+  background: var(--g-accent-soft);
+  opacity: 1;
+}
+.e-emoji-tab:active {
+  transform: scale(0.92);
+}
+.e-emoji-tab .dc-emoji {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.e-emoji-section {
+  padding: 8px 10px 10px;
+}
+.e-emoji-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.e-emoji-label {
+  padding-bottom: 6px;
+  color: var(--g-ink-faint);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.e-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+}
+
+.e-emoji-cell {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 90ms var(--g-ease-state),
+    transform 120ms var(--g-ease-out);
+}
+.e-emoji-cell:hover {
+  background: var(--g-fill-2);
+  /* The hovered emoji grows, which is what the client does and what makes a
+     dense grid feel like a set of targets rather than a texture. */
+  transform: scale(1.18);
+}
+.e-emoji-cell:active {
+  transform: scale(0.96);
+}
+.e-emoji-cell .dc-emoji,
+.e-emoji-cell img {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  object-fit: contain;
+}
+
+.e-emoji-none {
+  margin: 0;
+  padding: 22px 8px;
+  color: var(--g-ink-faint);
+  font-size: 12.5px;
+  text-align: center;
+}
+
 .e-emoji-slot {
   display: flex;
   align-items: center;
   gap: 4px;
-  position: relative;
 }
-.e-emoji-slot .e-input {
+.e-emoji-slot .e-control {
   flex: 1;
   min-width: 0;
 }
 
-.e-emoji-insert {
-  position: relative;
-  display: inline-flex;
-}
-
-.e-emoji-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  border: 0;
-  background: transparent;
-  cursor: default;
-}
-
-/* Anchored to the control rather than centred on the page: the picker is a
-   continuation of the field it was opened from, and a modal in the middle of
-   the screen for one glyph is a modal too many. */
-.e-emoji-pop {
-  position: absolute;
-  z-index: 61;
-  top: calc(100% + 6px);
-  border-radius: var(--g-r-inset);
-  box-shadow: var(--mac-lift-high);
-  overflow: hidden;
-  animation: e-menu 200ms var(--g-ease-sheet);
-}
-/* From the corner nearest its button, so the panel reads as having come out
-   of the control rather than having appeared beside it. */
-.e-emoji-pop {
-  transform-origin: top right;
-}
-.e-emoji-pop[data-align="end"] {
-  right: 0;
-}
-.e-emoji-pop[data-align="start"] {
-  transform-origin: top left;
-}
-.e-emoji-pop[data-align="start"] {
-  left: 0;
-}
-
-/* The panel is 320px wide and the inspector is 380 with 28 of padding, so at
-   the right edge it would hang off. Pinned to the right of its control and
-   allowed to overhang the panel's left instead, which is empty canvas. */
-.e-emoji-loading {
-  display: grid;
-  width: 320px;
-  height: 380px;
-  place-items: center;
-  background: var(--g-sheet-ground);
-  color: var(--g-ink-faint);
-  font-size: 12.5px;
+@media (prefers-reduced-motion: reduce) {
+  .e-emoji-cell:hover,
+  .e-emoji-cell:active,
+  .e-emoji-tab:active {
+    transform: none;
+  }
 }

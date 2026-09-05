@@ -17,7 +17,7 @@
  * why this file is a third the size of the one it is modelled on.
  */
 
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   IconChevronDown,
   IconCopy,
@@ -28,6 +28,11 @@ import {
 import { BLOCK_TYPES, LIMITS, NESTABLE, newBlock, newButton, newSelectOption, reid, uid } from "@/lib/model";
 import { ColorField, Counter, Field, ImageField, Pick, Row, Segmented, Text, Toggle } from "./fields";
 import { EmojiInsert, EmojiSlot, useEmojiInsert } from "./emoji-picker";
+
+/* The project's uploaded emoji, so every picker in the tree offers them
+   without each block editor being handed the whole project. */
+const EmojiSet = React.createContext([]);
+const useEmojis = () => React.useContext(EmojiSet);
 import "./blocks.css";
 
 /* ---------------------------------------------------------------- adder */
@@ -80,6 +85,7 @@ const BUTTON_STYLES = [
 ];
 
 function ButtonEditor({ button, onChange, onRemove, index }) {
+  const emojis = useEmojis();
   return (
     <div className="e-sub">
       <header className="e-sub-head">
@@ -93,7 +99,7 @@ function ButtonEditor({ button, onChange, onRemove, index }) {
           <Text value={button.label} onChange={(v) => onChange({ label: v })} limit={LIMITS.buttonLabel} />
         </Field>
         <Field label="Emoji" hint="A Unicode emoji, or :name: for one you uploaded.">
-          <EmojiSlot value={button.emoji} onChange={(v) => onChange({ emoji: v })} />
+          <EmojiSlot custom={emojis} value={button.emoji} onChange={(v) => onChange({ emoji: v })} />
         </Field>
       </Row>
       <Row>
@@ -119,6 +125,7 @@ function ButtonEditor({ button, onChange, onRemove, index }) {
 /* ------------------------------------------------------- block bodies */
 
 function TextBody({ block, patch }) {
+  const emojis = useEmojis();
   const body = useRef(null);
   const insert = useEmojiInsert(body, block.content, (content) => patch({ content }));
   return (
@@ -127,7 +134,7 @@ function TextBody({ block, patch }) {
       hint="Markdown, headings, lists, quotes, spoilers, mentions and timestamps all render."
       counter={
         <span className="e-field-tools">
-          <EmojiInsert onPick={insert} />
+          <EmojiInsert onPick={insert} custom={emojis} />
           <Counter value={block.content} limit={LIMITS.v2Characters} />
         </span>
       }
@@ -300,6 +307,7 @@ const SELECT_KINDS = [
 ];
 
 function SelectBody({ block, patch }) {
+  const emojis = useEmojis();
   const options = block.options ?? [];
   const set = (id, over) => patch({ options: options.map((o) => (o.id === id ? { ...o, ...over } : o)) });
 
@@ -333,7 +341,7 @@ function SelectBody({ block, patch }) {
                   <Text value={option.label} onChange={(v) => set(option.id, { label: v })} />
                 </Field>
                 <Field label="Emoji">
-                  <EmojiSlot value={option.emoji} onChange={(v) => set(option.id, { emoji: v })} />
+                  <EmojiSlot custom={emojis} value={option.emoji} onChange={(v) => set(option.id, { emoji: v })} />
                 </Field>
               </Row>
               <Field label="Description">
@@ -490,7 +498,7 @@ function BlockRow({ block, onPatch, onRemove, onDuplicate, onMove, first, last, 
   );
 }
 
-export function BlockList({ blocks = [], onChange, onError, depth = 0 }) {
+export function BlockList({ blocks = [], onChange, onError, depth = 0, emojis }) {
   const types = depth === 0 ? Object.keys(BLOCK_TYPES) : NESTABLE;
 
   const move = (i, delta) => {
@@ -501,7 +509,7 @@ export function BlockList({ blocks = [], onChange, onError, depth = 0 }) {
     onChange(next);
   };
 
-  return (
+  const tree = (
     <div className="e-blocks">
       {blocks.map((block, i) => (
         <BlockRow
@@ -525,4 +533,7 @@ export function BlockList({ blocks = [], onChange, onError, depth = 0 }) {
       />
     </div>
   );
+
+  // The provider only wraps the outermost list; nested ones inherit it.
+  return depth === 0 ? <EmojiSet.Provider value={emojis ?? []}>{tree}</EmojiSet.Provider> : tree;
 }

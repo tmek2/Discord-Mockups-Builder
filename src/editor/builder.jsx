@@ -16,6 +16,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   IconArrowBackUp,
+  IconArrowDown,
+  IconArrowUp,
   IconArrowForwardUp,
   IconCheck,
   IconCloud,
@@ -37,6 +39,7 @@ import {
   IconZoomIn,
   IconZoomOut,
 } from "@tabler/icons-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SiteNav } from "@/gator/site-nav";
 import { DiscordSurface } from "@/discord/surface";
 import { blankProject, newMessage, reid, uid } from "@/lib/model";
@@ -59,6 +62,21 @@ const SECTIONS = [
   { id: "canvas", label: "Canvas", Icon: IconPalette },
   { id: "cloud", label: "Saved", Icon: IconCloud },
 ];
+
+/* A hover label, with the shortcut where there is one. Every control that is
+   an icon alone needs one — an icon is a guess until something names it — and
+   the shortcut belongs here rather than in a help page nobody opens. */
+function Hint({ label, keys, children }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent className="e-hint">
+        {label}
+        {keys ? <kbd>{keys}</kbd> : null}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 const STORE_KEY = "project";
 const SLUG_KEY = "slug";
@@ -427,21 +445,31 @@ export function Builder({ user, canSignIn = true }) {
         </div>
 
         <div className="e-topbar-actions e-no-export">
-          <button type="button" className="e-icon-btn" onClick={undo} disabled={!past.length} aria-label="Undo">
-            <IconArrowBackUp size={16} />
-          </button>
-          <button type="button" className="e-icon-btn" onClick={redo} disabled={!future.length} aria-label="Redo">
-            <IconArrowForwardUp size={16} />
-          </button>
-          <button type="button" className="e-btn e-btn-quiet" onClick={() => setTemplatesOpen(true)}>
-            <IconStack2 size={15} /> Templates
-          </button>
-          <button type="button" className="e-btn e-btn-quiet" onClick={doShare}>
-            <IconShare2 size={15} /> Share
-          </button>
-          <button type="button" className="e-btn e-btn-solid" onClick={doExportPng} disabled={exporting}>
-            <IconPhotoDown size={15} /> {exporting ? "Exporting…" : "PNG"}
-          </button>
+          <Hint label="Undo" keys="⌘Z">
+            <button type="button" className="e-icon-btn" onClick={undo} disabled={!past.length} aria-label="Undo">
+              <IconArrowBackUp size={16} />
+            </button>
+          </Hint>
+          <Hint label="Redo" keys="⇧⌘Z">
+            <button type="button" className="e-icon-btn" onClick={redo} disabled={!future.length} aria-label="Redo">
+              <IconArrowForwardUp size={16} />
+            </button>
+          </Hint>
+          <Hint label="Start from a template">
+            <button type="button" className="e-btn e-btn-quiet" onClick={() => setTemplatesOpen(true)}>
+              <IconStack2 size={15} /> Templates
+            </button>
+          </Hint>
+          <Hint label="Copy a link that carries the whole mockup">
+            <button type="button" className="e-btn e-btn-quiet" onClick={doShare}>
+              <IconShare2 size={15} /> Share
+            </button>
+          </Hint>
+          <Hint label={`Export a PNG at ${project.canvas.scale}×`}>
+            <button type="button" className="e-btn e-btn-solid" onClick={doExportPng} disabled={exporting}>
+              <IconPhotoDown size={15} /> {exporting ? "Exporting…" : "PNG"}
+            </button>
+          </Hint>
         </div>
       </SiteNav>
 
@@ -538,22 +566,32 @@ export function Builder({ user, canSignIn = true }) {
               </ol>
 
               <div className="e-outline-actions">
-                <button type="button" className="e-btn e-btn-dashed" onClick={addMessage}>
-                  <IconPlus size={15} /> Add a message
-                </button>
+                <Hint label="Add another message to the mockup" keys="⌘↵">
+                  <button type="button" className="e-btn e-btn-dashed" onClick={addMessage}>
+                    <IconPlus size={15} /> Add a message
+                  </button>
+                </Hint>
                 <div className="e-outline-tools">
-                  <button type="button" className="e-icon-btn" onClick={() => moveMessage(-1)} aria-label="Move up">
-                    ↑
-                  </button>
-                  <button type="button" className="e-icon-btn" onClick={() => moveMessage(1)} aria-label="Move down">
-                    ↓
-                  </button>
-                  <button type="button" className="e-icon-btn" onClick={duplicateMessage} aria-label="Duplicate">
-                    <IconCopy size={15} />
-                  </button>
-                  <button type="button" className="e-icon-btn" onClick={removeMessage} aria-label="Delete">
-                    <IconTrash size={15} />
-                  </button>
+                  <Hint label="Move up">
+                    <button type="button" className="e-icon-btn" onClick={() => moveMessage(-1)} aria-label="Move up">
+                      <IconArrowUp size={15} />
+                    </button>
+                  </Hint>
+                  <Hint label="Move down">
+                    <button type="button" className="e-icon-btn" onClick={() => moveMessage(1)} aria-label="Move down">
+                      <IconArrowDown size={15} />
+                    </button>
+                  </Hint>
+                  <Hint label="Duplicate" keys="⌘D">
+                    <button type="button" className="e-icon-btn" onClick={duplicateMessage} aria-label="Duplicate">
+                      <IconCopy size={15} />
+                    </button>
+                  </Hint>
+                  <Hint label="Delete this message">
+                    <button type="button" className="e-icon-btn" onClick={removeMessage} aria-label="Delete">
+                      <IconTrash size={15} />
+                    </button>
+                  </Hint>
                 </div>
               </div>
             </div>
@@ -590,25 +628,31 @@ export function Builder({ user, canSignIn = true }) {
           <div className="e-stage-bar e-no-export">
             <span className="e-stage-label">{project.canvas.platform === "mobile" ? "Phone" : "Desktop"} · {project.canvas.theme}</span>
             <span className="e-stage-spacer" />
-            <button
-              type="button"
-              className="e-icon-btn"
-              onClick={() => setZoom((z) => Math.max(0.4, Math.round((z - 0.1) * 10) / 10))}
-              aria-label="Zoom out"
-            >
-              <IconZoomOut size={16} />
-            </button>
-            <button type="button" className="e-zoom" onClick={() => setZoom(1)} title="Reset the zoom">
-              {Math.round(shown * 100)}%
-            </button>
-            <button
-              type="button"
-              className="e-icon-btn"
-              onClick={() => setZoom((z) => Math.min(2, Math.round((z + 0.1) * 10) / 10))}
-              aria-label="Zoom in"
-            >
-              <IconZoomIn size={16} />
-            </button>
+            <Hint label="Zoom out">
+              <button
+                type="button"
+                className="e-icon-btn"
+                onClick={() => setZoom((z) => Math.max(0.4, Math.round((z - 0.1) * 10) / 10))}
+                aria-label="Zoom out"
+              >
+                <IconZoomOut size={16} />
+              </button>
+            </Hint>
+            <Hint label="Fit the canvas" keys="⌘scroll to zoom">
+              <button type="button" className="e-zoom" onClick={() => setZoom(1)}>
+                {Math.round(shown * 100)}%
+              </button>
+            </Hint>
+            <Hint label="Zoom in">
+              <button
+                type="button"
+                className="e-icon-btn"
+                onClick={() => setZoom((z) => Math.min(2, Math.round((z + 0.1) * 10) / 10))}
+                aria-label="Zoom in"
+              >
+                <IconZoomIn size={16} />
+              </button>
+            </Hint>
           </div>
 
           <div
@@ -651,9 +695,11 @@ export function Builder({ user, canSignIn = true }) {
           <header className="e-right-head">
             <h2>{section === "messages" ? "Message" : panelTitle}</h2>
             {section === "messages" && message ? (
-              <button type="button" className="e-btn e-btn-quiet" onClick={copyJson}>
-                <IconCopy size={14} /> JSON
-              </button>
+              <Hint label="Copy this message&rsquo;s payload">
+                <button type="button" className="e-btn e-btn-quiet" onClick={copyJson}>
+                  <IconCopy size={14} /> Copy JSON
+                </button>
+              </Hint>
             ) : null}
           </header>
 
@@ -681,7 +727,14 @@ export function Builder({ user, canSignIn = true }) {
 
           <div className="e-right-body">
             {section === "messages" ? (
-              <Inspector tab={tab} message={message} project={project} patch={patchMessage} onError={fail} />
+              <Inspector
+                tab={tab}
+                message={message}
+                project={project}
+                patch={patchMessage}
+                onError={fail}
+                onNotify={notify}
+              />
             ) : section === "users" ? (
               <UsersPanel project={project} commit={commit} onError={fail} />
             ) : section === "emojis" ? (

@@ -1,6 +1,7 @@
 import { Inter, Merriweather, Nunito } from "next/font/google";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { THEME_SCRIPT } from "@/gator/theme";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 import "@/gator/tokens.css";
 
 /* The interface face. Nunito's rounded terminals are the whole reason it is
@@ -38,7 +39,9 @@ const inter = Inter({
 
 export const metadata = {
   metadataBase: new URL("https://mockups.gatorsys.xyz"),
-  title: { default: `${SITE_NAME} — ${SITE_TAGLINE}`, template: `%s — ${SITE_NAME}` },
+  /* One name, everywhere. No per-route suffix: there is one route, and a tab
+     reading "Builder — Gator Mockups" says the same thing twice. */
+  title: SITE_NAME,
   description: SITE_DESCRIPTION,
   openGraph: {
     title: SITE_NAME,
@@ -47,7 +50,7 @@ export const metadata = {
     siteName: SITE_NAME,
     type: "website",
   },
-  icons: { icon: "/favicon.svg" },
+  icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }] },
 };
 
 export const viewport = {
@@ -70,7 +73,14 @@ export default function RootLayout({ children }) {
             light never watches a black page correct itself. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* One provider for every hover label in the app. Radix needs it above
+            anything that uses a Tooltip, and a delay short enough that the
+            label feels like part of the control rather than a timer. */}
+        <TooltipProvider delayDuration={280} skipDelayDuration={120}>
+          {children}
+        </TooltipProvider>
+      </body>
     </html>
   );
 }

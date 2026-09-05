@@ -1,19 +1,37 @@
 "use client";
 
-/* The editor's form primitives.
+/* The editor's form controls.
  *
- * One of each, used everywhere. The reason to have them at all rather than
- * writing inputs inline is not brevity — it is that a label, its control, its
- * hint and its counter have a fixed relationship, and every place that
- * rebuilds that relationship by hand gets one of the four slightly wrong.
+ * Every one of these is the component from `src/components/ui`, which is the
+ * set copied out of gatorsys.xyz — the same Radix primitives, the same markup,
+ * the same classes. This file is only the layout around them: a label, its
+ * control, its hint and its counter, in the one arrangement they always take.
+ *
+ * Nothing here is a native `<select>` any more. A native select draws the
+ * operating system's menu, which on Windows is a grey rectangle with square
+ * corners in a font nothing else on the page uses — the single loudest way an
+ * interface can announce it was not designed.
  */
 
 import { useId, useRef, useState } from "react";
-import { IconChevronDown, IconPhoto, IconTrash, IconUpload } from "@tabler/icons-react";
+import { IconPhoto, IconTrash, IconUpload } from "@tabler/icons-react";
+import * as SwitchPrimitive from "@radix-ui/react-switch";
+import * as SliderPrimitive from "@radix-ui/react-slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import "./fields.css";
 
-export function Field({ label, hint, children, counter }) {
-  return (
+export function Field({ label, hint, children, counter, tip }) {
+  const body = (
     <label className="e-field">
       {label ? (
         <span className="e-field-head">
@@ -24,6 +42,13 @@ export function Field({ label, hint, children, counter }) {
       {children}
       {hint ? <span className="e-field-hint">{hint}</span> : null}
     </label>
+  );
+  if (!tip) return body;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{body}</TooltipTrigger>
+      <TooltipContent side="left">{tip}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -40,29 +65,25 @@ export function Counter({ value = "", limit }) {
   );
 }
 
-/* Takes a ref, because inserting an emoji at the caret needs the element the
-   caret is in. React 19 passes `ref` as an ordinary prop, so no forwardRef. */
-export function Text({ value, onChange, limit, multiline, rows = 3, ref, ...rest }) {
-  const Tag = multiline ? "textarea" : "input";
-  return (
-    <Tag
-      ref={ref}
-      className={`e-input${multiline ? " e-textarea" : ""}`}
-      value={value ?? ""}
-      rows={multiline ? rows : undefined}
-      onChange={(e) => onChange(e.target.value)}
-      data-over={limit && (value ?? "").length > limit ? "true" : "false"}
-      {...rest}
-    />
-  );
+export function Text({ value, onChange, limit, multiline, rows = 3, ref, className, ...rest }) {
+  const over = limit && (value ?? "").length > limit;
+  const shared = {
+    ref,
+    value: value ?? "",
+    onChange: (e) => onChange(e.target.value),
+    "data-over": over ? "true" : "false",
+    className: cn("e-control", over && "border-[var(--gator-danger)]", className),
+    ...rest,
+  };
+  return multiline ? <Textarea rows={rows} {...shared} /> : <Input {...shared} />;
 }
 
 export function Num({ value, onChange, min, max, step = 1, suffix }) {
   return (
     <span className="e-num">
-      <input
-        className="e-input"
+      <Input
         type="number"
+        className="e-control"
         value={value ?? 0}
         min={min}
         max={max}
@@ -74,17 +95,25 @@ export function Num({ value, onChange, min, max, step = 1, suffix }) {
   );
 }
 
+/* Radix's slider rather than `<input type="range">`, which cannot be styled
+   consistently across browsers — Firefox and Safari each draw their own track
+   and thumb and ignore most of what you tell them. */
 export function Slider({ value, onChange, min, max, step = 1, suffix = "" }) {
   return (
     <span className="e-slider">
-      <input
-        type="range"
-        value={value ?? min}
+      <SliderPrimitive.Root
+        className="relative flex h-5 w-full touch-none select-none items-center"
+        value={[value ?? min]}
         min={min}
         max={max}
         step={step}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
+        onValueChange={([v]) => onChange(v)}
+      >
+        <SliderPrimitive.Track className="relative h-[5px] w-full grow overflow-hidden rounded-full bg-[var(--gator-border-strong)]">
+          <SliderPrimitive.Range className="absolute h-full bg-[var(--accent-peach)]" />
+        </SliderPrimitive.Track>
+        <SliderPrimitive.Thumb className="block size-[15px] rounded-full border-2 border-[var(--accent-peach)] bg-[var(--gator-surface-raised)] shadow-sm transition-[transform,box-shadow] duration-150 ease-premium hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-peach)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--gator-bg)] active:scale-95" />
+      </SliderPrimitive.Root>
       <output>
         {value}
         {suffix}
@@ -93,24 +122,34 @@ export function Slider({ value, onChange, min, max, step = 1, suffix = "" }) {
   );
 }
 
-export function Pick({ value, onChange, options }) {
+/** The dashboard's Select. Options are `{value,label,hint}` or bare strings. */
+export function Pick({ value, onChange, options, placeholder = "Choose" }) {
   return (
-    <span className="e-pick">
-      <select className="e-input" value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
-        {options.map((o) => (
-          <option key={o.value ?? o} value={o.value ?? o}>
-            {o.label ?? o}
-          </option>
-        ))}
-      </select>
-      <IconChevronDown size={15} className="e-pick-caret" />
-    </span>
+    <Select value={value ?? ""} onValueChange={onChange}>
+      <SelectTrigger className="e-control h-10">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => {
+          const v = o.value ?? o;
+          return (
+            <SelectItem key={v} value={v}>
+              <span className="flex flex-col gap-0.5">
+                <span>{o.label ?? o}</span>
+                {o.hint ? (
+                  <span className="text-[11px] leading-snug text-[var(--gator-text-muted)]">{o.hint}</span>
+                ) : null}
+              </span>
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
   );
 }
 
-/* A segmented control, for a choice of three or four where the options are
-   short enough to read at once. Above that it is a select: a segmented control
-   with six segments is a row of truncated words. */
+/* A segmented control for three or four short options. Above that it is a
+   Select: a segmented control with six segments is a row of truncated words. */
 export function Segmented({ value, onChange, options, label }) {
   return (
     <div className="e-segmented" role="group" aria-label={label}>
@@ -133,6 +172,8 @@ export function Segmented({ value, onChange, options, label }) {
   );
 }
 
+/* Radix's switch, so the thumb animates from a real state machine and the
+   whole control is one keyboard target rather than a div with a click. */
 export function Toggle({ label, hint, value, onChange }) {
   const id = useId();
   return (
@@ -141,24 +182,21 @@ export function Toggle({ label, hint, value, onChange }) {
         <span className="e-toggle-label">{label}</span>
         {hint ? <span className="e-field-hint">{hint}</span> : null}
       </label>
-      <button
+      <SwitchPrimitive.Root
         id={id}
-        type="button"
-        role="switch"
-        aria-checked={Boolean(value)}
-        className="e-switch"
-        data-on={value ? "true" : "false"}
-        onClick={() => onChange(!value)}
+        checked={Boolean(value)}
+        onCheckedChange={onChange}
+        className="peer inline-flex h-[22px] w-[38px] shrink-0 cursor-pointer items-center rounded-full border border-transparent transition-colors duration-200 ease-premium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-peach)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--gator-bg)] disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-[var(--accent-peach)] data-[state=unchecked]:bg-[var(--gator-border-strong)]"
       >
-        <span className="e-switch-knob" />
-      </button>
+        <SwitchPrimitive.Thumb className="pointer-events-none block size-4 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-premium data-[state=checked]:translate-x-[19px] data-[state=unchecked]:translate-x-[3px]" />
+      </SwitchPrimitive.Root>
     </div>
   );
 }
 
 /* Discord's own accent presets alongside a free picker. The presets exist
-   because most embeds want one of about eight colours and hunting for #5865f2
-   in a colour wheel every time is not a workflow. */
+   because most embeds want one of about eight colours, and hunting for
+   #5865f2 in a colour wheel every time is not a workflow. */
 const SWATCHES = [
   { value: "#5865f2", name: "Blurple" },
   { value: "#f7a8c4", name: "Gator" },
@@ -175,26 +213,33 @@ export function ColorField({ value, onChange, allowNone = false }) {
     <div className="e-color">
       <div className="e-swatches">
         {allowNone ? (
-          <button
-            type="button"
-            className="e-swatch e-swatch-none"
-            data-on={!value || value === "none" ? "true" : "false"}
-            onClick={() => onChange("none")}
-            aria-label="No accent"
-            title="No accent"
-          />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="e-swatch e-swatch-none"
+                data-on={!value || value === "none" ? "true" : "false"}
+                onClick={() => onChange("none")}
+                aria-label="No accent"
+              />
+            </TooltipTrigger>
+            <TooltipContent>No accent</TooltipContent>
+          </Tooltip>
         ) : null}
         {SWATCHES.map((s) => (
-          <button
-            key={s.value}
-            type="button"
-            className="e-swatch"
-            style={{ background: s.value }}
-            data-on={value?.toLowerCase() === s.value ? "true" : "false"}
-            onClick={() => onChange(s.value)}
-            aria-label={s.name}
-            title={s.name}
-          />
+          <Tooltip key={s.value}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="e-swatch"
+                style={{ background: s.value }}
+                data-on={value?.toLowerCase() === s.value ? "true" : "false"}
+                onClick={() => onChange(s.value)}
+                aria-label={s.name}
+              />
+            </TooltipTrigger>
+            <TooltipContent>{s.name}</TooltipContent>
+          </Tooltip>
         ))}
       </div>
       <div className="e-color-custom">
@@ -205,8 +250,8 @@ export function ColorField({ value, onChange, allowNone = false }) {
           onChange={(e) => onChange(e.target.value)}
           aria-label="Custom colour"
         />
-        <input
-          className="e-input e-color-hex"
+        <Input
+          className="e-control e-color-hex"
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder="#5865f2"
@@ -222,8 +267,7 @@ export function ColorField({ value, onChange, allowNone = false }) {
  * Both, because they solve different problems. A pasted file becomes a data
  * URI, which travels inside the project file and works offline but counts
  * against the cloud backup's size limit; a URL costs nothing and breaks if the
- * host goes away. The field says which one is in use rather than hiding it.
- */
+ * host goes away. The field says which one is in use rather than hiding it. */
 export function ImageField({ value, onChange, label, hint, onError }) {
   const [mode, setMode] = useState(() => (value?.startsWith("data:") ? "file" : "url"));
   const input = useRef(null);
@@ -275,8 +319,8 @@ export function ImageField({ value, onChange, label, hint, onError }) {
             {value ? "Replace" : "Choose a file"}
           </button>
         ) : (
-          <input
-            className="e-input"
+          <Input
+            className="e-control"
             value={value?.startsWith("data:") ? "" : (value ?? "")}
             onChange={(e) => onChange(e.target.value)}
             placeholder="https://…"
@@ -285,14 +329,19 @@ export function ImageField({ value, onChange, label, hint, onError }) {
         )}
 
         {value ? (
-          <button
-            type="button"
-            className="e-btn e-btn-quiet e-btn-icon"
-            onClick={() => onChange("")}
-            aria-label="Remove image"
-          >
-            <IconTrash size={15} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="e-btn e-btn-quiet e-btn-icon"
+                onClick={() => onChange("")}
+                aria-label="Remove image"
+              >
+                <IconTrash size={15} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Remove</TooltipContent>
+          </Tooltip>
         ) : null}
 
         <input
@@ -326,7 +375,9 @@ export function Group({ title, action, children, collapsible = false, open: open
       <header className="e-group-head">
         {collapsible ? (
           <button type="button" className="e-group-toggle" onClick={() => setOpen((v) => !v)}>
-            <IconChevronDown size={14} className="e-group-caret" />
+            <svg className="e-group-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m7 10 5 5 5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             {title}
           </button>
         ) : (
@@ -341,4 +392,25 @@ export function Group({ title, action, children, collapsible = false, open: open
 
 export function Empty({ children }) {
   return <p className="e-empty">{children}</p>;
+}
+
+/** A quiet control with a label that only appears on hover — used wherever an
+ *  icon has to stand in for a word. */
+export function IconAction({ label, onClick, disabled, children, className }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className={cn("e-icon-btn", className)}
+          onClick={onClick}
+          disabled={disabled}
+          aria-label={label}
+        >
+          {children}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
 }

@@ -37,6 +37,7 @@ import {
   Toggle,
 } from "./fields";
 import { BlockList } from "./blocks";
+import { JsonPanel } from "./json-panel";
 import { EmojiInsert, EmojiSlot, useEmojiInsert } from "./emoji-picker";
 
 /* ------------------------------------------------------------- content */
@@ -99,7 +100,7 @@ function ContentTab({ message, patch, project, onError }) {
             hint="Markdown, mentions like <@Rowan>, channels like <#general>, timestamps like <t:1735689600:R>."
             counter={
               <span className="e-field-tools">
-                <EmojiInsert onPick={insert} />
+                <EmojiInsert onPick={insert} custom={project.emojis} />
                 <Counter value={message.content} limit={LIMITS.content} />
               </span>
             }
@@ -410,7 +411,7 @@ function EmbedsTab({ message, patch, onError }) {
 
 /* -------------------------------------------------------------- extras */
 
-function ExtrasTab({ message, patch, onError }) {
+function ExtrasTab({ message, patch, project, onError }) {
   const attachments = message.attachments ?? [];
   const reactions = message.reactions ?? [];
 
@@ -500,6 +501,7 @@ function ExtrasTab({ message, patch, onError }) {
             <Row>
               <Field label="Emoji">
                 <EmojiSlot
+                  custom={project.emojis}
                   value={r.emoji}
                   onChange={(v) => patch({ reactions: reactions.map((x) => (x.id === r.id ? { ...x, emoji: v } : x)) })}
                   placeholder="👍"
@@ -584,6 +586,7 @@ function ExtrasTab({ message, patch, onError }) {
                 </Row>
                 <Field label="Emoji">
                   <EmojiSlot
+                    custom={project.emojis}
                     value={answer.emoji}
                     onChange={(v) =>
                       patch({
@@ -811,9 +814,9 @@ function ExtrasTab({ message, patch, onError }) {
 
 /* --------------------------------------------------------------- shell */
 
-export const TABS = ["Content", "Embeds", "Components", "Extras"];
+export const TABS = ["Content", "Embeds", "Components", "Extras", "JSON"];
 
-export function Inspector({ tab, message, project, patch, onError }) {
+export function Inspector({ tab, message, project, patch, onError, onNotify }) {
   if (!message) return <Empty>Pick a message on the left, or add one.</Empty>;
 
   switch (tab) {
@@ -830,11 +833,14 @@ export function Inspector({ tab, message, project, patch, onError }) {
             blocks={message.components ?? []}
             onChange={(components) => patch({ components })}
             onError={onError}
+            emojis={project.emojis}
           />
         </>
       );
     case "Extras":
-      return <ExtrasTab message={message} patch={patch} onError={onError} />;
+      return <ExtrasTab message={message} patch={patch} project={project} onError={onError} />;
+    case "JSON":
+      return <JsonPanel message={message} patch={patch} onError={onError} onNotify={onNotify} />;
     default:
       return <ContentTab message={message} patch={patch} project={project} onError={onError} />;
   }

@@ -207,3 +207,184 @@ export function readShareLink(hash) {
 }
 
 export { safeName };
+
+/* ------------------------------------------------------- JSON, coming in */
+
+/* Reading a Discord message payload back into a mockup.
+ *
+ * The inverse of `messageJson`, and the reason it exists is that most people
+ * arriving at a tool like this already have a payload: something a bot sends,
+ * something out of Discohook, something a teammate pasted in chat. Making them
+ * rebuild it by hand in a form is asking them to do work they have already
+ * done.
+ *
+ * It reads both shapes. A legacy message is `content` plus `embeds` plus
+ * action rows; a Components v2 message is a `components` tree with the 32768
+ * flag. Neither is assumed — whatever is present is converted, and anything
+ * unrecognised is skipped rather than throwing, because a payload with one
+ * unknown key in it is still ninety per cent of a mockup.
+ */
+
+const INT_TO_HEX = (n) =>
+  typeof n === "number" && Number.isFinite(n) ? `#${(n & 0xffffff).toString(16).padStart(6, "0")}` : undefined;
+
+const STYLE_FROM = { 1: "primary", 2: "secondary", 3: "success", 4: "danger", 5: "link", 6: "premium" };
+const SELECT_FROM = { 3: "string", 5: "user", 6: "role", 7: "mentionable", 8: "channel" };
+
+function fromButton(c, uid) {
+  return {
+    id: uid(),
+    label: c.label ?? "",
+    style: STYLE_FROM[c.style] ?? "secondary",
+    emoji: c.emoji?.name ?? "",
+    url: c.url ?? "",
+    disabled: Boolean(c.disabled),
+  };
+}
+
+function fromComponent(c, uid) {
+  switch (c.type) {
+    case 10: // text display
+      return { id: uid(), type: "text", content: c.content ?? "" };
+    case 9: {
+      // section: one to three text displays plus an accessory
+      const text = (c.components ?? []).map((t) => t.content ?? "").join("\n");
+      const a = c.accessory ?? {};
+      return {
+        id: uid(),
+        type: "section",
+        content: text,
+        accessory:
+          a.type === 2
+            ? { kind: "button", ...fromButton(a, uid) }
+            : { kind: "thumbnail", src: a.media?.url ?? "", alt: a.description ?? "" },
+      };
+    }
+    case 12:
+      return {
+        id: uid(),
+        type: "gallery",
+        items: (c.items ?? []).map((i) => ({
+          id: uid(),
+          src: i.media?.url ?? "",
+          alt: i.description ?? "",
+          spoiler: Boolean(i.spoiler),
+        })),
+      };
+    case 14:
+      return {
+        id: uid(),
+        type: "separator",
+        divider: c.divider !== false,
+        spacing: c.spacing === 2 ? "large" : "small",
+      };
+    case 13:
+      return {
+        id: uid(),
+        type: "file",
+        name: String(c.file?.url ?? "file").replace(/^attachment:\/\//, ""),
+        size: "",
+        spoiler: Boolean(c.spoiler),
+      };
+    case 17:
+      return {
+        id: uid(),
+        type: "container",
+        color: INT_TO_HEX(c.accent_color) ?? "none",
+        spoiler: Boolean(c.spoiler),
+        blocks: (c.components ?? []).map((x) => fromComponent(x, uid)).filter(Boolean),
+      };
+    case 1: {
+      // An action row is a button row or a single select; which one it is
+      // depends on what is in it, not on the row.
+      const kids = c.components ?? [];
+      const menu = kids.find((k) => k.type in SELECT_FROM && k.type !== 2);
+      if (menu) {
+        return {
+          id: uid(),
+          type: "select",
+          kind: SELECT_FROM[menu.type] ?? "string",
+          placeholder: menu.placeholder ?? "",
+          disabled: Boolean(menu.disabled),
+          options: (menu.options ?? []).map((o) => ({
+            id: uid(),
+            label: o.label ?? "",
+            description: o.description ?? "",
+            emoji: o.emoji?.name ?? "",
+          })),
+        };
+      }
+      return { id: uid(), type: "buttons", buttons: kids.filter((k) => k.type === 2).map((k) => fromButton(k, uid)) };
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * Turn a payload into the fields of a message.
+ *
+ * Returns `{ patch }` on success or `{ error }` with something worth reading.
+ * The caller merges the patch into whichever message is selected, so the
+ * author, the timestamp and everything else about the mockup survive.
+ */
+export function messageFromJson(text, uid) {
+  let payload;
+  try {
+    payload = JSON.parse(text);
+  } catch (error) {
+    return { error: `That is not valid JSON — ${String(error.message).replace(/^JSON\.parse: /, "")}` };
+  }
+  if (Array.isArray(payload)) payload = payload[0];
+  if (!payload || typeof payload !== "object") return { error: "A message payload has to be an object." };
+
+  /* Discohook wraps a message in `{ messages: [{ data: … }] }` when you use
+     its share links, and a webhook body is the bare message. Both are common
+     enough to unwrap rather than reject. */
+  if (Array.isArray(payload.messages)) payload = payload.messages[0]?.data ?? payload.messages[0] ?? {};
+  if (payload.data && typeof payload.data === "object") payload = payload.data;
+
+  const patch = {
+    content: typeof payload.content === "string" ? payload.content : "",
+    embeds: [],
+    components: [],
+  };
+
+  if (Array.isArray(payload.embeds)) {
+    patch.embeds = payload.embeds.slice(0, 20).map((e) => ({
+      id: uid(),
+      color: INT_TO_HEX(e.color) ?? "#5865f2",
+      author: e.author?.name ?? "",
+      authorIcon: e.author?.icon_url ?? "",
+      authorUrl: e.author?.url ?? "",
+      title: e.title ?? "",
+      url: e.url ?? "",
+      description: e.description ?? "",
+      thumbnail: e.thumbnail?.url ?? "",
+      image: e.image?.url ?? "",
+      video: e.video?.url ?? "",
+      footer: e.footer?.text ?? "",
+      footerIcon: e.footer?.icon_url ?? "",
+      timestamp: e.timestamp ?? "",
+      provider: e.provider?.name ?? "",
+      fields: (e.fields ?? []).map((f) => ({
+        id: uid(),
+        name: f.name ?? "",
+        value: f.value ?? "",
+        inline: Boolean(f.inline),
+      })),
+    }));
+  }
+
+  if (Array.isArray(payload.components)) {
+    patch.components = payload.components.map((c) => fromComponent(c, uid)).filter(Boolean);
+  }
+
+  if (typeof payload.flags === "number") patch.ephemeral = Boolean(payload.flags & 64);
+  if (payload.tts) patch.tts = true;
+
+  if (!patch.content && !patch.embeds.length && !patch.components.length) {
+    return { error: "There is no content, embed or component in that payload." };
+  }
+  return { patch };
+}

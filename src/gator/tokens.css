@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Gator tokens.
  *
  * The same palette the site's landing page is drawn in, so the editor around
@@ -198,6 +202,112 @@
 
     color-scheme: light;
   }
+}
+
+
+/* ------------------------------------------------- the component tokens */
+
+/* The components copied out of gatorsys.xyz (`src/components/ui`) resolve
+ * their colours from `--gator-*`, which is the token set that repo's own
+ * stylesheet defines. Rather than editing every component — which would mean
+ * they stop being the same components and start being a fork — the names are
+ * bridged here to the values of the 2026 landing palette above.
+ *
+ * So a Select in this app is the Select from the dashboard, drawn in the
+ * colours of the new site. Copying a newer version of one of those components
+ * across needs no changes at all.
+ */
+:root {
+  --gator-bg: var(--g-ground);
+  --gator-surface: var(--g-fill);
+  --gator-surface-raised: var(--g-sheet-ground);
+  --gator-surface-strong: var(--g-grouped-box);
+  --gator-border: var(--g-line);
+  --gator-border-strong: var(--g-line-strong);
+  --gator-text: var(--g-ink);
+  --gator-text-dim: var(--g-ink-dim);
+  --gator-text-muted: var(--g-ink-faint);
+  --gator-accent: var(--g-accent);
+  --gator-accent-soft: var(--g-accent-soft);
+  --gator-accent-ink: var(--g-accent-ink);
+  --gator-on-accent: var(--g-on-accent);
+  --gator-danger: #e0566a;
+
+  /* The button's own accent, named as gatorsys names it. Same pink, one step
+     brighter than the display accent because a filled control carries it at
+     full size rather than as a line of type. */
+  --accent-peach: #f7a8c4;
+  --accent-peach-strong: #ffbfd4;
+
+  /* shadcn's HSL triples, which a handful of the copied components reach for
+     through Tailwind's colour scale. Same values, expressed the way that
+     scale expects them. */
+  --radius: 10px;
+  --background: 240 8% 5%;
+  --foreground: 24 12% 95%;
+  --card: 240 7% 9%;
+  --card-foreground: 24 12% 95%;
+  --popover: 240 6% 15%;
+  --popover-foreground: 24 12% 95%;
+  --primary: 338 82% 82%;
+  --primary-foreground: 340 51% 11%;
+  --secondary: 240 6% 12%;
+  --secondary-foreground: 24 12% 95%;
+  --muted: 240 6% 12%;
+  --muted-foreground: 240 5% 60%;
+  --accent: 240 6% 14%;
+  --accent-foreground: 24 12% 95%;
+  --destructive: 353 71% 61%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 100%;
+  --input: 0 0% 100%;
+  --ring: 338 82% 82%;
+}
+
+:root[data-theme="light"],
+:root:not([data-theme]) {
+  --gator-danger: #c8394a;
+  --accent-peach: #df8592;
+  --accent-peach-strong: #d96e7d;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --background: 37 55% 85%;
+    --foreground: 340 34% 22%;
+    --card: 35 60% 91%;
+    --card-foreground: 340 34% 22%;
+    --popover: 36 60% 93%;
+    --popover-foreground: 340 34% 22%;
+    --primary: 351 58% 70%;
+    --primary-foreground: 340 34% 22%;
+    --secondary: 36 52% 88%;
+    --secondary-foreground: 340 34% 22%;
+    --muted: 36 52% 88%;
+    --muted-foreground: 0 16% 43%;
+    --accent: 36 52% 88%;
+    --accent-foreground: 340 34% 22%;
+    --border: 340 34% 22%;
+    --input: 340 34% 22%;
+  }
+}
+:root[data-theme="light"] {
+  --background: 37 55% 85%;
+  --foreground: 340 34% 22%;
+  --card: 35 60% 91%;
+  --card-foreground: 340 34% 22%;
+  --popover: 36 60% 93%;
+  --popover-foreground: 340 34% 22%;
+  --primary: 351 58% 70%;
+  --primary-foreground: 340 34% 22%;
+  --secondary: 36 52% 88%;
+  --secondary-foreground: 340 34% 22%;
+  --muted: 36 52% 88%;
+  --muted-foreground: 0 16% 43%;
+  --accent: 36 52% 88%;
+  --accent-foreground: 340 34% 22%;
+  --border: 340 34% 22%;
+  --input: 340 34% 22%;
 }
 
 /* --------------------------------------------------------------- the page */

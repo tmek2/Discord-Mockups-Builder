@@ -50,38 +50,21 @@
   color: #ff8ba0;
 }
 
-.e-input {
-  width: 100%;
-  min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid var(--g-line);
-  border-radius: 9px;
-  background: var(--g-fill);
-  color: var(--g-ink);
-  font: inherit;
+/* The controls themselves are the ported components; this is only the shell
+   they sit in. `.e-control` is the one hook the editor adds — a slightly
+   tighter height and type size than the dashboard's default, because an
+   inspector column is denser than a settings page. */
+.e-control {
+  height: 36px;
   font-size: 13px;
-  transition: border-color var(--g-fast) var(--g-ease-state), background-color var(--g-fast) var(--g-ease-state);
 }
-.e-input:hover {
-  border-color: var(--g-line-strong);
-}
-.e-input:focus {
-  border-color: var(--g-accent-line);
-  background: var(--g-fill-2);
-  outline: none;
-}
-.e-input[data-over="true"] {
-  border-color: color-mix(in srgb, #e0566a 55%, transparent);
-}
-.e-input::placeholder {
-  color: var(--g-ink-faint);
-}
-
-.e-textarea {
-  resize: vertical;
+textarea.e-control {
+  height: auto;
   min-height: 64px;
+  padding-top: 8px;
+  padding-bottom: 8px;
   line-height: 1.5;
-  font-family: inherit;
+  resize: vertical;
 }
 
 .e-row {
@@ -112,10 +95,10 @@
   align-items: center;
   gap: 10px;
 }
-.e-slider input {
+.e-slider > span:first-child,
+.e-slider [data-orientation="horizontal"] {
   flex: 1;
   min-width: 0;
-  accent-color: var(--g-accent);
 }
 .e-slider output {
   min-width: 48px;
@@ -124,24 +107,6 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   text-align: right;
-}
-
-.e-pick {
-  position: relative;
-  display: block;
-}
-.e-pick select {
-  appearance: none;
-  padding-right: 30px;
-  cursor: pointer;
-}
-.e-pick-caret {
-  position: absolute;
-  right: 9px;
-  top: 50%;
-  color: var(--g-ink-faint);
-  transform: translateY(-50%);
-  pointer-events: none;
 }
 
 /* A segmented control for three or four short options. Above that it is a
@@ -203,46 +168,6 @@
   color: var(--g-ink);
   font-size: 12.5px;
   font-weight: 700;
-}
-
-.e-switch {
-  position: relative;
-  width: 38px;
-  height: 22px;
-  flex: none;
-  margin-top: 1px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: var(--g-line-strong);
-  cursor: pointer;
-  transition: background-color var(--g-fast) var(--g-ease-state);
-}
-.e-switch[data-on="true"] {
-  background: var(--g-accent);
-}
-.e-switch-knob {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  /* Slightly under-damped: a switch is a physical throw, and a knob that
-     arrives dead reads as a picture of a switch. This is the closest a CSS
-     curve gets to a spring at damping 0.8 — everything a *gesture* drives is
-     on a real spring instead. */
-  transition: transform 260ms cubic-bezier(0.34, 1.36, 0.64, 1);
-}
-/* The knob stretches toward where it is going, which telegraphs the outcome
-   before the movement finishes. */
-.e-switch:active .e-switch-knob {
-  width: 20px;
-}
-.e-switch[data-on="true"] .e-switch-knob {
-  transform: translateX(16px);
 }
 
 /* --------------------------------------------------------------- colour */

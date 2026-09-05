@@ -76,9 +76,7 @@ export function SiteNav({ user, canSignIn = true, compact = false, links = true,
       <div className="g-nav-bar">
         <Link className="g-brand" href="/">
           <GatorLogo size={compact ? 24 : 30} />
-          <span className="g-brand-word">
-            Gator<span className="g-brand-sub">Mockups</span>
-          </span>
+          <span className="g-brand-word">Gator Mockups</span>
         </Link>
 
         {links ? (
