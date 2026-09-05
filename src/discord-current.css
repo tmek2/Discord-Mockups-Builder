@@ -1,0 +1,15 @@
+/* Color tokens and gg sans faces are sourced from Discord's public desktop
+   client assets, retrieved September 5, 2026. See DESIGN-SOURCES.md. */
+.discord-preview.dark,.discord-preview.ash,.discord-preview.onyx,.discord-preview.light{background:var(--chat-background-default);color:var(--text-default);--embed-bg:var(--background-surface-high);--muted:var(--text-muted);--heading:var(--text-strong);font-family:'gg sans','Noto Sans',Arial,sans-serif;line-height:1.375}
+.discord-preview .mention{color:var(--mention-foreground);background:var(--mention-background);font-weight:500;border-radius:3px;padding:0 2px}
+.discord-preview .discord-embed{background:var(--background-surface-high);border:1px solid var(--border-subtle);border-left:4px solid;border-radius:4px;padding:12px 16px 16px 12px;line-height:1.2857142857}
+.discord-preview .discord-container{background:var(--background-surface-high);border:1px solid var(--border-subtle);border-left:4px solid;border-radius:8px}
+.discord-preview .mock-button{border:1px solid var(--border-subtle);border-radius:8px;font-family:'gg sans',Arial,sans-serif;padding:7px 16px;font-weight:500;min-height:32px;line-height:16px;background:var(--control-secondary-background-default);color:var(--control-secondary-text-default)}
+.discord-preview .mock-button.primary{background:var(--control-primary-background-default);color:#fff;border-color:transparent}.discord-preview .mock-button.success{background:#00863a;color:white;border-color:transparent}.discord-preview .mock-button.danger{background:#d22d39;color:white;border-color:transparent}
+.discord-preview .app-badge{background:var(--control-primary-background-default);font-size:10px;line-height:14px;font-weight:600}
+.discord-preview .message-meta{line-height:22px;align-items:baseline;gap:5px}.discord-preview .message-meta time{margin-left:3px;line-height:16px}.discord-preview .message-meta strong{font-weight:600}.discord-preview .embed-author,.discord-preview .embed-title{margin-bottom:8px}.discord-preview .embed-footer{line-height:16px;font-size:12px}
+.discord-preview .component-separator{border-color:var(--border-subtle)}.discord-preview .reactions>span{background:var(--background-base-lower);border-radius:8px}.discord-preview .reactions>span.active{background:var(--mention-background);border-color:var(--control-primary-background-default);color:var(--mention-foreground)}
+.discord-preview .discord-select{background:var(--background-base-lower);border-color:var(--border-subtle);color:var(--text-muted)}.discord-preview .discord-poll,.discord-preview .file-card{border-color:var(--border-subtle)}.discord-preview .rich pre,.discord-preview .rich code{background:var(--background-base-lower)}
+.discord-preview .skeleton-text>div{background:color-mix(in srgb,var(--text-muted) 30%,transparent)}
+.discord-preview .rich:has(>p>.custom-emoji:only-child)>p>.custom-emoji{height:48px;width:48px}
+.embed-fields{grid-template-columns:repeat(12,minmax(0,1fr))}
