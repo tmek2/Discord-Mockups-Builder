@@ -130,7 +130,9 @@ export function UsersPanel({ project, commit, onError }) {
           ) : null}
 
           <ImageField
+            round
             label="Or upload one"
+            hint="Cropped to a square from the centre and masked into a circle, the way the client does it."
             value={user.avatar?.startsWith("data:") ? user.avatar : ""}
             onChange={(v) => patch(user.id, { avatar: v || avatarUrl(0) })}
             onError={onError}
@@ -176,6 +178,7 @@ export function UsersPanel({ project, commit, onError }) {
           </Field>
 
           <ImageField
+            square
             label="Avatar decoration"
             hint="Drawn over the avatar at 1.2×, the way the client layers one."
             value={user.decoration}
@@ -183,6 +186,7 @@ export function UsersPanel({ project, commit, onError }) {
             onError={onError}
           />
           <ImageField
+            square
             label="Role icon"
             value={user.roleIcon}
             onChange={(v) => patch(user.id, { roleIcon: v })}
@@ -378,6 +382,7 @@ export function CanvasPanel({ project, commit, onError, onChrome }) {
           <Text value={canvas.channel?.topic} onChange={(v) => setIn("channel", { topic: v })} />
         </Field>
         <ImageField
+          square
           label="Server icon"
           value={canvas.server?.icon}
           onChange={(v) => setIn("server", { icon: v })}

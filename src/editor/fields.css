@@ -241,6 +241,11 @@ textarea.e-control {
   background: var(--g-fill);
   color: var(--g-ink-faint);
 }
+/* A slot the client masks into a circle previews as one, so the crop shown
+   here is the crop that gets drawn. */
+.e-image-preview[data-round="true"] {
+  border-radius: 50%;
+}
 .e-image-preview img {
   width: 100%;
   height: 100%;

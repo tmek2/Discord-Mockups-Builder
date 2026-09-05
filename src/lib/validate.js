@@ -14,18 +14,22 @@
  * thing to draw.
  */
 
+import { isSafeMedia, isSafeUrl } from "./urls";
+
 const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const isString = (v) => typeof v === "string";
 const optString = (v, k) => v[k] === undefined || v[k] === null || isString(v[k]);
 
-/* An image reference is a data URI for a raster format, a path on this origin,
-   or an https URL. Never `javascript:`, never `data:text/html`. */
-const isImage = (v) =>
-  !v ||
-  (isString(v) &&
-    (/^data:image\/(png|jpe?g|gif|webp|avif|bmp|x-icon|svg\+xml);/i.test(v) ||
-      /^\/[\w./-]*$/.test(v) ||
-      /^https:\/\//i.test(v)));
+/* Media and link references go through the same allow-list the renderer uses.
+ *
+ * One decision, in one place. This used to be a regex here and nothing at all
+ * at the point of rendering, which meant the two could disagree — and the one
+ * that mattered was the missing one, because a field this accepted still went
+ * straight into an `href`. Now the validator refuses a hostile project at the
+ * door and the renderer neutralises anything that got past. Both, because
+ * either alone is one mistake away from an XSS in a shared mockup. */
+const isImage = (v) => isSafeMedia(v);
+const isLink = (v) => isSafeUrl(v);
 
 const BLOCK_TYPES = new Set([
   "text",
@@ -48,9 +52,15 @@ function validBlocks(list, depth = 0) {
     if (b.type === "container" && b.blocks !== undefined && !validBlocks(b.blocks, depth + 1)) return false;
     if (b.buttons !== undefined) {
       if (!Array.isArray(b.buttons) || b.buttons.length > 25) return false;
-      if (!b.buttons.every((x) => isObject(x) && optString(x, "label") && (!x.style || BUTTON_STYLES.has(x.style)))) {
-        return false;
-      }
+      const buttonsOk = b.buttons.every(
+        (x) =>
+          isObject(x) &&
+          optString(x, "label") &&
+          (!x.style || BUTTON_STYLES.has(x.style)) &&
+          optString(x, "url") &&
+          isLink(x.url),
+      );
+      if (!buttonsOk) return false;
     }
     if (b.items !== undefined) {
       if (!Array.isArray(b.items) || b.items.length > 40) return false;
@@ -72,7 +82,16 @@ export function validProject(p) {
 
     if (!Array.isArray(p.users) || p.users.length < 1 || p.users.length > 300) return false;
     if (new Set(p.users.map((u) => u.id)).size !== p.users.length) return false;
-    if (!p.users.every((u) => isObject(u) && isString(u.id) && isString(u.name) && isImage(u.avatar))) return false;
+    const usersOk = p.users.every(
+      (u) =>
+        isObject(u) &&
+        isString(u.id) &&
+        isString(u.name) &&
+        isImage(u.avatar) &&
+        isImage(u.decoration) &&
+        isImage(u.roleIcon),
+    );
+    if (!usersOk) return false;
 
     if (!Array.isArray(p.messages) || p.messages.length > 500) return false;
     if (new Set(p.messages.map((m) => m.id)).size !== p.messages.length) return false;
@@ -87,10 +106,11 @@ export function validProject(p) {
         const embedsOk = m.embeds.every(
           (e) =>
             isObject(e) &&
-            ["title", "description", "author", "color", "footer", "timestamp", "url", "provider"].every((k) =>
+            ["title", "description", "author", "color", "footer", "timestamp", "provider"].every((k) =>
               optString(e, k),
             ) &&
-            ["image", "thumbnail", "authorIcon", "footerIcon"].every((k) => isImage(e[k])) &&
+            ["url", "authorUrl"].every((k) => optString(e, k) && isLink(e[k])) &&
+            ["image", "thumbnail", "authorIcon", "footerIcon", "video"].every((k) => isImage(e[k])) &&
             (e.fields === undefined ||
               (Array.isArray(e.fields) && e.fields.length <= 50 && e.fields.every((f) => isObject(f)))),
         );
@@ -105,6 +125,11 @@ export function validProject(p) {
       }
       if (m.reactions !== undefined && !Array.isArray(m.reactions)) return false;
       if (m.sticker && !isImage(m.sticker.src)) return false;
+      if (m.invite && !isImage(m.invite.icon)) return false;
+      if (m.linkPreview) {
+        const p = m.linkPreview;
+        if (!isObject(p) || !isLink(p.url) || !isImage(p.thumbnail) || !isImage(p.image)) return false;
+      }
       return true;
     });
     if (!ok) return false;
@@ -116,7 +141,8 @@ export function validProject(p) {
 
     if (!isObject(p.canvas)) return false;
     if (!["ash", "dark", "onyx", "light"].includes(p.canvas.theme)) return false;
-    if (p.canvas.customBackground && !isImage(p.canvas.customBackground)) return false;
+    if (!isImage(p.canvas.customBackground)) return false;
+    if (p.canvas.server && !isImage(p.canvas.server.icon)) return false;
 
     return true;
   } catch {

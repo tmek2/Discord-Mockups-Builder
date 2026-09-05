@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { readAsDataUrl, squareCrop } from "@/lib/image";
 import "./fields.css";
 
 export function Field({ label, hint, children, counter, tip }) {
@@ -268,11 +269,11 @@ export function ColorField({ value, onChange, allowNone = false }) {
  * URI, which travels inside the project file and works offline but counts
  * against the cloud backup's size limit; a URL costs nothing and breaks if the
  * host goes away. The field says which one is in use rather than hiding it. */
-export function ImageField({ value, onChange, label, hint, onError }) {
+export function ImageField({ value, onChange, label, hint, onError, round = false, square = round }) {
   const [mode, setMode] = useState(() => (value?.startsWith("data:") ? "file" : "url"));
   const input = useRef(null);
 
-  const take = (file) => {
+  const take = async (file) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       onError?.("That file is not an image.");
@@ -282,10 +283,17 @@ export function ImageField({ value, onChange, label, hint, onError }) {
       onError?.("Images pasted into a mockup are capped at 4 MB. Link it by URL instead.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => onChange(String(reader.result));
-    reader.onerror = () => onError?.("That image could not be read.");
-    reader.readAsDataURL(file);
+    try {
+      /* A slot that is a fixed circle or square gets the upload cropped to fit
+         it, the way Discord crops an avatar at upload rather than squashing it
+         at render. Everything else keeps whatever shape it arrived in. */
+      onChange(square ? await squareCrop(file) : await readAsDataUrl(file));
+      // A file has just been chosen, so the field should be showing the file
+      // control — not a URL box the upload did not come from.
+      setMode("file");
+    } catch {
+      onError?.("That image could not be read.");
+    }
   };
 
   return (
@@ -304,7 +312,9 @@ export function ImageField({ value, onChange, label, hint, onError }) {
       </div>
 
       <div className="e-image-row">
-        <span className="e-image-preview">
+        {/* The preview is masked the same way the slot is, so what you see
+            here is the crop you are going to get. */}
+        <span className="e-image-preview" data-round={round ? "true" : "false"}>
           {value ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={value} alt="" />

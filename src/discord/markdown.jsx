@@ -25,6 +25,7 @@ import { Fragment, createElement, useContext } from "react";
 import { EMOJI_RE, jumboable } from "./emoji";
 import { Twemoji } from "./emoji-node";
 import { RenderContext } from "./context";
+import { safeMedia, safeUrl } from "@/lib/urls";
 
 /* --------------------------------------------------------------- inline */
 
@@ -149,9 +150,14 @@ function inline(text, ctx, keyBase, big) {
         case "emoji": {
           const custom = ctx.emojis?.find((e) => e.name === m[2]);
           push(
-            custom?.src ? (
+            safeMedia(custom?.src) ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className={`dc-emoji${big ? " dc-emoji-jumbo" : ""}`} src={custom.src} alt={`:${m[2]}:`} draggable={false} />
+              <img
+                className={`dc-emoji${big ? " dc-emoji-jumbo" : ""}`}
+                src={safeMedia(custom.src)}
+                alt={`:${m[2]}:`}
+                draggable={false}
+              />
             ) : (
               <span className="dc-emoji-missing" title={`:${m[2]}:`}>{`:${m[2]}:`}</span>
             ),
@@ -183,20 +189,41 @@ function inline(text, ctx, keyBase, big) {
           push(<span className="dc-mention">@{m[1]}</span>);
           break;
         case "bare":
-        case "url":
+        case "url": {
+          /* The pattern already required an http(s) scheme, so this is belt
+             and braces — but it is the same helper everywhere, so there is one
+             answer to "is this URL allowed" rather than two that can drift. */
+          const shown = rule.name === "bare" ? m[1] : m[0];
+          const target = safeUrl(shown);
           push(
-            <a className="dc-link" href={rule.name === "bare" ? m[1] : m[0]} target="_blank" rel="noreferrer nofollow">
-              {rule.name === "bare" ? m[1] : m[0]}
-            </a>,
+            target ? (
+              <a className="dc-link" href={target} target="_blank" rel="noreferrer nofollow">
+                {shown}
+              </a>
+            ) : (
+              shown
+            ),
           );
           break;
-        case "link":
+        }
+        case "link": {
+          const target = safeUrl(m[3]);
+          const label = inline(m[1], ctx, `${keyBase}-l${key}`, false);
+          /* A masked link whose destination is not allowed keeps its text and
+             loses its link. Rendering it as a dead `#` would be a link people
+             click twice; dropping the text would silently delete what somebody
+             wrote. */
           push(
-            <a className="dc-link" href={m[3]} title={m[4]} target="_blank" rel="noreferrer nofollow">
-              {inline(m[1], ctx, `${keyBase}-l${key}`, false)}
-            </a>,
+            target ? (
+              <a className="dc-link" href={target} title={m[4]} target="_blank" rel="noreferrer nofollow">
+                {label}
+              </a>
+            ) : (
+              label
+            ),
           );
           break;
+        }
         /* A spoiler in a mockup is drawn covered, because that is the state
            the reader of the picture is meant to see. It still opens on a
            press, which is what makes it recognisable as one. */

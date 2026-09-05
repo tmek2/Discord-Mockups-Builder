@@ -262,7 +262,7 @@ function EmbedEditor({ embed, patch, onRemove, index, onError }) {
           <Text value={embed.authorUrl} onChange={(v) => patch({ authorUrl: v })} placeholder="https://…" />
         </Field>
       </Row>
-      <ImageField label="Author icon" value={embed.authorIcon} onChange={(v) => patch({ authorIcon: v })} onError={onError} />
+      <ImageField round label="Author icon" value={embed.authorIcon} onChange={(v) => patch({ authorIcon: v })} onError={onError} />
 
       <Field label="Title" counter={<Counter value={embed.title} limit={LIMITS.embedTitle} />}>
         <Text value={embed.title} onChange={(v) => patch({ title: v })} limit={LIMITS.embedTitle} />
@@ -342,7 +342,7 @@ function EmbedEditor({ embed, patch, onRemove, index, onError }) {
           <Text value={embed.timestamp} onChange={(v) => patch({ timestamp: v })} placeholder="2026-09-05 10:00" />
         </Field>
       </Row>
-      <ImageField label="Footer icon" value={embed.footerIcon} onChange={(v) => patch({ footerIcon: v })} onError={onError} />
+      <ImageField round label="Footer icon" value={embed.footerIcon} onChange={(v) => patch({ footerIcon: v })} onError={onError} />
     </Group>
   );
 }
@@ -726,6 +726,7 @@ function ExtrasTab({ message, patch, project, onError }) {
               </Field>
             </Row>
             <ImageField
+              square
               label="Server icon"
               value={message.invite.icon}
               onChange={(v) => patch({ invite: { ...message.invite, icon: v } })}

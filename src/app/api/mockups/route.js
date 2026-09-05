@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authConfigured, currentUser } from "@/auth";
 import { MAX_PACKED, PER_USER, store, storeConfigured } from "@/lib/store";
 import { validProject } from "@/lib/validate";
+import { LIMITS, callerKey, limit, tooMany } from "@/lib/rate-limit";
 
 /* The cloud copy.
  *
@@ -43,6 +44,9 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  const gate = await limit("backup", callerKey(request), LIMITS.backup);
+  if (!gate.ok) return tooMany(gate.retryAfter);
+
   if (!storeConfigured() || !authConfigured) return unavailable();
   const id = await owner();
   if (!id) return NextResponse.json({ error: "Sign in first." }, { status: 401 });

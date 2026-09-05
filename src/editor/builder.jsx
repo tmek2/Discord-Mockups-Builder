@@ -39,12 +39,14 @@ import {
   IconZoomIn,
   IconZoomOut,
 } from "@tabler/icons-react";
+import Link from "next/link";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SiteNav } from "@/gator/site-nav";
 import { Blob, useBlob } from "@/gator/blob";
 import { DiscordSurface } from "@/discord/surface";
 import { blankProject, newMessage, reid, uid } from "@/lib/model";
 import { TEMPLATES } from "@/lib/templates";
+import { SUPPORT_URL } from "@/lib/site";
 import { loadValue, saveValue } from "@/lib/storage";
 import { migrate, validProject } from "@/lib/validate";
 import { Inspector, TABS } from "./inspector";
@@ -52,6 +54,8 @@ import { CanvasPanel, EmojiPanel, UsersPanel } from "./panels";
 import { BackupsPanel } from "./backups-panel";
 import { exportMessageJson, exportPng, exportProject, messageJson, readShareLink, shareLink } from "./export";
 import { AUTO_EVERY_MS, takeSnapshot } from "@/lib/backups";
+import { forkProject } from "@/lib/fork";
+import { ID } from "@/lib/ids";
 import { Palette } from "./palette";
 import { useCanvasGestures } from "./use-canvas";
 import { useOverlay } from "./use-overlay";
@@ -86,7 +90,10 @@ const SLUG_KEY = "slug";
 
 export function Builder({ user, canSignIn = true, shared = null }) {
   const [project, setProject] = useState(blankProject);
-  const [slug, setSlug] = useState("draft");
+  /* The key this mockup's cloud copy is written under, and the thing that
+     makes "save" mean "update mine" rather than "update whichever one this
+     came from". Minted per document, never reused across a fork. */
+  const [slug, setSlug] = useState(() => ID.mockup());
   const [past, setPast] = useState([]);
   const [future, setFuture] = useState([]);
   const [section, setSection] = useState("messages");
@@ -118,15 +125,21 @@ export function Builder({ user, canSignIn = true, shared = null }) {
     /* A share link wins over what is in storage: somebody who opened a link
        meant to look at that, and the draft they had is still in IndexedDB
        under the same key, untouched. */
-    /* A shared mockup opens as a working copy: there is no way to write back
-       through a share link, and letting two people believe they are editing
-       the same thing would be worse than not sharing at all. */
+    /* A shared mockup opens as a *fork*, not as a working copy of the
+       original.
+       `forkProject` replaces every id in it and strips anything that said
+       where the sender's copy lived, so the two documents share no identifier
+       at all. That is what makes the isolation structural rather than a
+       convention: nothing the recipient does can reach the sender's backups,
+       because after this there is no name in common to reach them by. The
+       slug — which is the key a cloud backup is written under — is new too, so
+       saving this can only ever create a row rather than land on one. */
     const incoming = shared ?? readShareLink(window.location.hash);
     if (incoming && validProject(migrate(incoming))) {
-      setProject(migrate(incoming));
-      setSlug(uid().slice(0, 8));
+      setProject(forkProject(migrate(incoming)));
+      setSlug(ID.mockup());
       setLoaded(true);
-      notify("Opened a shared mockup. It is your own copy from here.");
+      notify("Opened a shared mockup. This is your own copy — edits here reach nobody else.");
       if (!shared) window.history.replaceState(null, "", window.location.pathname);
       return () => {
         alive = false;
@@ -323,14 +336,19 @@ export function Builder({ user, canSignIn = true, shared = null }) {
   );
 
   const load = useCallback(
-    (next, nextSlug) => {
+    (next, nextSlug, { detach = false } = {}) => {
       const migrated = migrate(next);
       if (!validProject(migrated)) {
         fail("That is not a valid mockup file.");
         return;
       }
-      commit(migrated);
+      /* Detaching is for anything that arrived from somewhere else — an
+         imported file, a shared link. Restoring your own backup is not
+         detached: it is the same document going back in time, and giving it a
+         new identity every time would turn one mockup into a pile of them. */
+      commit(detach ? forkProject(migrated) : migrated);
       if (nextSlug) setSlug(nextSlug);
+      else if (detach) setSlug(ID.mockup());
       setSelected(migrated.messages[0]?.id ?? null);
       setSection("messages");
       setTab("Content");
@@ -364,7 +382,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
       notify(
         kind === "fragment"
           ? "Link copied. It carries the whole mockup and never touches the server."
-          : "Short link copied. It works for a week.",
+          : "Short link copied. It opens a separate copy, and it expires in 14 days.",
       );
     } catch {
       fail(`Could not reach the clipboard. The link is ${url}`);
@@ -391,8 +409,8 @@ export function Builder({ user, canSignIn = true, shared = null }) {
         return;
       }
       try {
-        load(JSON.parse(await file.text()), uid().slice(0, 8));
-        notify("Project imported.");
+        load(JSON.parse(await file.text()), null, { detach: true });
+        notify("Project imported as your own copy.");
       } catch {
         fail("That file could not be read as a mockup.");
       }
@@ -467,6 +485,10 @@ export function Builder({ user, canSignIn = true, shared = null }) {
         canSignIn={canSignIn}
         compact
         links={false}
+        onProfile={() => {
+          setSection("backups");
+          setPane("inspector");
+        }}
         leading={
           <div className="e-titlebar">
             <Hint label="Rename this mockup">
@@ -670,6 +692,19 @@ export function Builder({ user, canSignIn = true, shared = null }) {
               <IconFileText size={15} /> Download the project
             </button>
             <input ref={importer} type="file" accept="application/json,.json" hidden onChange={importFile} />
+
+            {/* The documents behind the tool. Quiet, at the bottom, out of the
+                way of everything anybody came here to press — but present on
+                every screen, which is the point of them. */}
+            <nav className="e-legal" aria-label="About this tool">
+              <Link href="/terms">Terms</Link>
+              <span aria-hidden="true">·</span>
+              <Link href="/privacy">Privacy</Link>
+              <span aria-hidden="true">·</span>
+              <a href={SUPPORT_URL} target="_blank" rel="noreferrer">
+                Support
+              </a>
+            </nav>
           </div>
         </aside>
 
@@ -856,7 +891,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                     type="button"
                     className="e-template"
                     onClick={() => {
-                      load(template.build(), uid().slice(0, 8));
+                      load(template.build(), ID.mockup());
                       setTemplatesOpen(false);
                       notify(`Opened “${template.name}”.`);
                     }}
@@ -871,7 +906,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                   type="button"
                   className="e-template"
                   onClick={() => {
-                    load(blankProject(), uid().slice(0, 8));
+                    load(blankProject(), ID.mockup());
                     setTemplatesOpen(false);
                   }}
                 >

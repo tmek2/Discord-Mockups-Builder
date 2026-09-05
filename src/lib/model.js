@@ -8,11 +8,16 @@
  */
 
 import { avatarUrl } from "./avatars";
+import { ID, newId } from "./ids";
 
 export const PROJECT_VERSION = 2;
 
-export const uid = () =>
-  globalThis.crypto?.randomUUID?.() ?? `id-${Math.random().toString(36).slice(2, 11)}`;
+/* Every id in a project comes from one scheme — see `ids.js`. It is prefixed
+   so an id says what it is, time-ordered so a list sorts by creation, and its
+   random half comes from the CSPRNG rather than `Math.random`, which some
+   engines seed predictably enough to enumerate. */
+export const uid = () => newId("id");
+export { ID };
 
 /* --------------------------------------------------------------- limits */
 
@@ -47,7 +52,7 @@ export const LIMITS = {
 /* ---------------------------------------------------------------- users */
 
 export const newUser = (over = {}) => ({
-  id: uid(),
+  id: ID.user(),
   name: "New member",
   color: "",
   avatar: avatarUrl(0),
@@ -69,7 +74,7 @@ export const newUser = (over = {}) => ({
 /* -------------------------------------------------------------- embeds */
 
 export const newEmbed = (over = {}) => ({
-  id: uid(),
+  id: ID.embed(),
   color: "#5865f2",
   author: "",
   authorIcon: "",
@@ -88,12 +93,12 @@ export const newEmbed = (over = {}) => ({
   ...over,
 });
 
-export const newField = (over = {}) => ({ id: uid(), name: "Field name", value: "Field value", inline: false, ...over });
+export const newField = (over = {}) => ({ id: ID.field(), name: "Field name", value: "Field value", inline: false, ...over });
 
 /* --------------------------------------------------- components (v2) --- */
 
 export const newButton = (over = {}) => ({
-  id: uid(),
+  id: ID.button(),
   label: "Button",
   style: "secondary",
   emoji: "",
@@ -103,7 +108,7 @@ export const newButton = (over = {}) => ({
 });
 
 export const newSelectOption = (over = {}) => ({
-  id: uid(),
+  id: ID.item(),
   label: "Option",
   description: "",
   emoji: "",
@@ -116,13 +121,13 @@ export const BLOCK_TYPES = {
   text: {
     label: "Text",
     hint: "A paragraph. Markdown, headings, lists and mentions all work.",
-    make: () => ({ id: uid(), type: "text", content: "Your text here" }),
+    make: () => ({ id: ID.block(), type: "text", content: "Your text here" }),
   },
   section: {
     label: "Section",
     hint: "Up to three lines of text with a thumbnail or a button beside them.",
     make: () => ({
-      id: uid(),
+      id: ID.block(),
       type: "section",
       content: "Text with something pinned to its right.",
       accessory: { kind: "thumbnail", src: "", alt: "" },
@@ -131,23 +136,23 @@ export const BLOCK_TYPES = {
   gallery: {
     label: "Media gallery",
     hint: "Up to ten images or videos in a grid.",
-    make: () => ({ id: uid(), type: "gallery", items: [] }),
+    make: () => ({ id: ID.block(), type: "gallery", items: [] }),
   },
   separator: {
     label: "Separator",
     hint: "A dividing line, or blank space with no line.",
-    make: () => ({ id: uid(), type: "separator", divider: true, spacing: "small" }),
+    make: () => ({ id: ID.block(), type: "separator", divider: true, spacing: "small" }),
   },
   buttons: {
     label: "Button row",
     hint: "Up to five buttons on one line.",
-    make: () => ({ id: uid(), type: "buttons", buttons: [newButton()] }),
+    make: () => ({ id: ID.block(), type: "buttons", buttons: [newButton()] }),
   },
   select: {
     label: "Select menu",
     hint: "A dropdown — string options, or a user, role, channel or mentionable picker.",
     make: () => ({
-      id: uid(),
+      id: ID.block(),
       type: "select",
       kind: "string",
       placeholder: "Make a selection",
@@ -158,17 +163,17 @@ export const BLOCK_TYPES = {
   file: {
     label: "File",
     hint: "An uploaded file, drawn as the client's file card.",
-    make: () => ({ id: uid(), type: "file", name: "document.pdf", size: "24.1 KB", spoiler: false }),
+    make: () => ({ id: ID.block(), type: "file", name: "document.pdf", size: "24.1 KB", spoiler: false }),
   },
   container: {
     label: "Container",
     hint: "A box with an accent stripe. Only what you put inside it is boxed.",
     make: () => ({
-      id: uid(),
+      id: ID.block(),
       type: "container",
       color: "#5865f2",
       spoiler: false,
-      blocks: [{ id: uid(), type: "text", content: "Inside the container." }],
+      blocks: [{ id: ID.block(), type: "text", content: "Inside the container." }],
     }),
   },
 };
@@ -181,7 +186,7 @@ export const newBlock = (type) => BLOCK_TYPES[type]?.make() ?? BLOCK_TYPES.text.
 /* ------------------------------------------------------------- messages */
 
 export const newMessage = (user, over = {}) => ({
-  id: uid(),
+  id: ID.message(),
   user,
   kind: "message",
   content: "",
@@ -222,7 +227,7 @@ export const newSystemMessage = (user, systemType = "join", over = {}) => ({
 });
 
 export const newAttachment = (over = {}) => ({
-  id: uid(),
+  id: ID.item(),
   kind: "image",
   src: "",
   name: "image.png",
@@ -232,13 +237,13 @@ export const newAttachment = (over = {}) => ({
   ...over,
 });
 
-export const newReaction = (over = {}) => ({ id: uid(), emoji: "👍", src: "", count: 1, me: false, burst: false, ...over });
+export const newReaction = (over = {}) => ({ id: ID.item(), emoji: "👍", src: "", count: 1, me: false, burst: false, ...over });
 
 export const newPoll = () => ({
   question: "Which one?",
   answers: [
-    { id: uid(), text: "The first one", emoji: "", votes: 12 },
-    { id: uid(), text: "The second one", emoji: "", votes: 7 },
+    { id: ID.item(), text: "The first one", emoji: "", votes: 12 },
+    { id: ID.item(), text: "The second one", emoji: "", votes: 7 },
   ],
   total: 19,
   duration: "1 day left",

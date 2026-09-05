@@ -10,6 +10,7 @@
 
 import { Emoji } from "./emoji-node";
 import { Markdown } from "./markdown";
+import { safeMedia, safeUrl } from "@/lib/urls";
 
 /* ------------------------------------------------------------ galleries */
 
@@ -268,9 +269,13 @@ export function LinkPreview({ preview }) {
           {preview.author ? <div className="dc-embed-author-name">{preview.author}</div> : null}
           {preview.title ? (
             <div className="dc-embed-title">
-              <a className="dc-link" href={preview.url || "#"} target="_blank" rel="noreferrer nofollow">
-                {preview.title}
-              </a>
+              {safeUrl(preview.url) ? (
+                <a className="dc-link" href={safeUrl(preview.url)} target="_blank" rel="noreferrer nofollow">
+                  {preview.title}
+                </a>
+              ) : (
+                preview.title
+              )}
             </div>
           ) : null}
           {preview.description ? (

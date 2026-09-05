@@ -104,6 +104,7 @@ want the account and the cloud copy.
 | `MONGODB_URI` | alternative to Redis | Only used when `MONGODB_COLLECTION` is also set. |
 | `MONGODB_COLLECTION` | with `MONGODB_URI` | The name of an **existing** collection to share. Nothing is created. |
 | `MONGODB_DB` | no | Database name. Defaults to the one in the connection string. |
+| `RATE_LIMIT_SALT` | no | Salts the hash the rate limiter buckets callers by, so a raw address is never written to Redis. Falls back to `AUTH_SECRET`. |
 
 The Discord application needs
 `https://mockups.gatorsys.xyz/api/auth/callback/discord` in its OAuth redirects
@@ -144,11 +145,53 @@ None of it is the primary copy. The browser holds the working copy and the
 backups; this is the second one, and every path degrades to "no cloud" rather
 than failing a save.
 
+## Sharing, and what a share link is not
+
+A share link is a **copy**, not access to your editor. Creating one forks the
+project: every id in it is reissued, and everything that identifies the sender
+— owner, slug, backup id, timestamps — is dropped before it is stored. So the
+person you send it to opens a mockup with nothing in common with yours. They
+cannot see your other mockups, they are not signed in as you, and their edits
+land in their browser, not yours.
+
+Backing up a shared copy makes a **new** mockup with new ids, so from that
+point the three are independent: further edits to the share do not touch the
+new backup, and edits to the backup do not touch the share.
+
+Links expire after **14 days** (`MIN_TTL` 5 minutes, `MAX_TTL` 28 days), which
+Redis enforces itself with a real TTL rather than a sweeper. Share pages are
+`noindex` and excluded in `robots.txt` — public by link is not public to
+Google.
+
+## Security
+
+Ported from gatorsys.xyz, and worth knowing about before changing anything
+here:
+
+- **CSP, HSTS, nosniff, `X-Frame-Options: DENY`, referrer and permissions
+  policy** on every response, set in `src/middleware.js`.
+- **Every URL is sanitised** before it reaches an `href` or a `src`
+  (`src/lib/urls.js`). A scheme allow-list, control characters stripped the way
+  a browser strips them, and the parser's own resolved href returned — so a
+  tab-split or NUL-split `javascript:` cannot get through. This matters because CSP alone
+  cannot stop them: `script-src` has to allow `'unsafe-inline'` for Next's
+  bootstrap.
+- **Two layers, deliberately.** The validator refuses a hostile project at the
+  API and on load; the renderer neutralises anything that reaches it anyway
+  through the JSON tab, which skips the validator by design.
+- **Rate limiting** on every endpoint that accepts a whole mockup
+  (`src/lib/rate-limit.js`): a Redis fixed window that *degrades open*, because
+  a cache outage must not become an outage of the app. Callers are bucketed by
+  a salted hash of the address, never the address itself.
+- **Ids are prefixed, time-ordered and from a CSPRNG** (`src/lib/ids.js`).
+  Share ids deliberately carry no timestamp — one would narrow a guess.
+
 ## Layout
 
 ```
 src/
-  app/           `/` is the builder, `/s/[id]` a shared mockup, plus the API
+  app/           `/` is the builder, `/s/[id]` a shared mockup, `/terms` and
+                 `/privacy` the legal pages, plus the API
   components/ui  Gator's own components, copied from gatorsys.xyz unchanged
   gator/         the design system: tokens, header, appearance, indicator
   discord/       the renderer — markdown, messages, embeds, components, chrome

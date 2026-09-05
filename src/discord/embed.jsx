@@ -15,6 +15,7 @@
  */
 
 import { Markdown, MarkdownInline, formatTime } from "./markdown";
+import { safeMedia, safeUrl } from "@/lib/urls";
 
 /* How wide one field sits, in twelfths.
  *
@@ -41,7 +42,18 @@ function footerTime(value) {
 
 export function Embed({ embed }) {
   const fields = embed.fields ?? [];
-  const hasSide = Boolean(embed.thumbnail);
+  /* Every URL out of the embed is checked before it becomes an attribute. An
+     embed can arrive from somebody else — a share link, an imported file, a
+     pasted payload — and `url` going straight into an `href` is a
+     `javascript:` URL away from running in the reader's session. */
+  const title = safeUrl(embed.url);
+  const author = safeUrl(embed.authorUrl);
+  const thumbnail = safeMedia(embed.thumbnail);
+  const image = safeMedia(embed.image);
+  const video = safeMedia(embed.video);
+  const authorIcon = safeMedia(embed.authorIcon);
+  const footerIcon = safeMedia(embed.footerIcon);
+  const hasSide = Boolean(thumbnail);
 
   return (
     <div className="dc-embed" style={{ borderLeftColor: embed.color || "#5865f2" }}>
@@ -51,9 +63,9 @@ export function Embed({ embed }) {
 
           {embed.author ? (
             <div className="dc-embed-author">
-              {embed.authorIcon ? <img className="dc-embed-author-icon" src={embed.authorIcon} alt="" /> : null}
-              {embed.authorUrl ? (
-                <a className="dc-embed-author-name dc-link" href={embed.authorUrl} target="_blank" rel="noreferrer nofollow">
+              {authorIcon ? <img className="dc-embed-author-icon" src={authorIcon} alt="" /> : null}
+              {author ? (
+                <a className="dc-embed-author-name dc-link" href={author} target="_blank" rel="noreferrer nofollow">
                   {embed.author}
                 </a>
               ) : (
@@ -64,8 +76,8 @@ export function Embed({ embed }) {
 
           {embed.title ? (
             <div className="dc-embed-title">
-              {embed.url ? (
-                <a className="dc-link" href={embed.url} target="_blank" rel="noreferrer nofollow">
+              {title ? (
+                <a className="dc-link" href={title} target="_blank" rel="noreferrer nofollow">
                   <MarkdownInline text={embed.title} />
                 </a>
               ) : (
@@ -100,19 +112,19 @@ export function Embed({ embed }) {
           ) : null}
         </div>
 
-        {embed.thumbnail ? (
-          <img className="dc-embed-thumb" src={embed.thumbnail} alt="" draggable={false} />
+        {thumbnail ? (
+          <img className="dc-embed-thumb" src={thumbnail} alt="" draggable={false} />
         ) : null}
       </div>
 
-      {embed.image ? <img className="dc-embed-image" src={embed.image} alt="" draggable={false} /> : null}
-      {embed.video && !embed.image ? (
-        <video className="dc-embed-image" src={embed.video} controls playsInline />
+      {image ? <img className="dc-embed-image" src={image} alt="" draggable={false} /> : null}
+      {video && !image ? (
+        <video className="dc-embed-image" src={video} controls playsInline />
       ) : null}
 
       {embed.footer || embed.timestamp ? (
         <div className="dc-embed-footer">
-          {embed.footerIcon ? <img className="dc-embed-footer-icon" src={embed.footerIcon} alt="" /> : null}
+          {footerIcon ? <img className="dc-embed-footer-icon" src={footerIcon} alt="" /> : null}
           {embed.footer ? <span>{embed.footer}</span> : null}
           {embed.footer && embed.timestamp ? <span className="dc-embed-dot">•</span> : null}
           {embed.timestamp ? <span>{footerTime(embed.timestamp)}</span> : null}

@@ -1,12 +1,16 @@
 import { notFound } from "next/navigation";
 import { store, storeConfigured } from "@/lib/store";
+import { isShareId } from "@/lib/ids";
+import { NO_INDEX } from "@/lib/no-index";
 import { authConfigured, currentUser } from "@/auth";
 import { Builder } from "@/editor/builder";
 import { validProject } from "@/lib/validate";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Shared mockup" };
+/* Public-by-link is not public. A share link is meant to be pasted to one
+   person; a search result is a different thing that nobody asked for. */
+export const metadata = { title: "Shared mockup", robots: NO_INDEX };
 
 /* A shared mockup, opened straight into the builder.
  *
@@ -17,7 +21,7 @@ export const metadata = { title: "Shared mockup" };
  */
 export default async function SharedMockup({ params }) {
   const { id } = await params;
-  if (!storeConfigured() || !/^[a-z0-9]{6,16}$/.test(id ?? "")) notFound();
+  if (!storeConfigured() || !isShareId(id)) notFound();
 
   let project = null;
   try {

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { MAX_PACKED, store, storeConfigured } from "@/lib/store";
 import { validProject } from "@/lib/validate";
+import { newShareId } from "@/lib/ids";
+import { forkProject } from "@/lib/fork";
+import { LIMITS, callerKey, limit, tooMany } from "@/lib/rate-limit";
 
 /* Share links.
  *
@@ -21,32 +24,22 @@ import { validProject } from "@/lib/validate";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const DEFAULT_TTL = 7 * 24 * 3600;
+/* Fourteen days. Long enough that a link pasted into a channel is still good
+   when somebody gets round to it; short enough that a mockup does not sit in
+   somebody else's scrollback indefinitely, pointing at a version you have
+   since changed and can no longer withdraw. */
+const DEFAULT_TTL = 14 * 24 * 3600;
 const MIN_TTL = 300;
 const MAX_TTL = 28 * 24 * 3600;
 
-/* Unambiguous by construction: no 0/O, no 1/l/I. A share id is a thing people
-   read off a screen and type back in, so the characters that look like each
-   other are simply not in the alphabet.
-   31 characters is not a power of two, so `% length` over raw bytes would bias
-   the first few. Rejection sampling instead — cheap, and the bias would be a
-   real (if small) reduction in how many ids there are. */
-const ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
-const LIMIT = 256 - (256 % ALPHABET.length);
-
-function shortId(length = 8) {
-  let out = "";
-  while (out.length < length) {
-    for (const byte of crypto.getRandomValues(new Uint8Array(length))) {
-      if (byte >= LIMIT) continue;
-      out += ALPHABET[byte % ALPHABET.length];
-      if (out.length === length) break;
-    }
-  }
-  return out;
-}
-
 export async function POST(request) {
+  /* Rate limited before anything else is read. Creating a share needs no
+     account by design, so this endpoint accepts a whole mockup from anybody
+     who can reach it — cheap to call, expensive to serve, which is the shape
+     of thing that gets used to fill somebody else's storage. */
+  const gate = await limit("share", callerKey(request), LIMITS.share);
+  if (!gate.ok) return tooMany(gate.retryAfter);
+
   if (!storeConfigured()) {
     return NextResponse.json(
       { error: "Short links are not configured on this deployment.", code: "no_backend" },
@@ -66,13 +59,23 @@ export async function POST(request) {
 
   const ttl = Math.min(MAX_TTL, Math.max(MIN_TTL, Number(body.ttl) || DEFAULT_TTL));
 
+  /* Forked on the way in as well as on the way out.
+   *
+   * The recipient's copy is detached when they open it, which is what keeps
+   * the two documents from ever naming the same thing. Doing it here too means
+   * the *stored* share never contains the sender's ids or any field saying
+   * where their copy lives — so a share is not merely presented as detached,
+   * there is nothing in it to detach from. Defence in depth against a future
+   * reader that forgets to fork. */
+  const project = forkProject(body.project);
+
   try {
     // Retry on the vanishingly unlikely collision rather than trusting it not
     // to happen; the store refuses to overwrite, which is what makes the check
     // meaningful rather than decorative.
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      const id = shortId(attempt < 3 ? 8 : 10);
-      const result = await store().putShare(id, body.project, ttl);
+      const id = newShareId();
+      const result = await store().putShare(id, project, ttl);
       if (result.ok) return NextResponse.json({ id, expiresAt: result.expiresAt });
       if (result.error === "too-large") {
         return NextResponse.json(

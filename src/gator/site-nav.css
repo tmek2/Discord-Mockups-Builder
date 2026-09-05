@@ -146,9 +146,13 @@
   border: 1px solid var(--g-line-strong);
   background: var(--g-fill-2);
   color: var(--g-ink);
+  /* It is a link on the legal pages and a button on the builder; a button
+     otherwise inherits none of this from the page. */
+  font-family: inherit;
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
+  cursor: pointer;
   flex: none;
   backdrop-filter: blur(10px);
   transition:

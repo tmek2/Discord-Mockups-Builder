@@ -19,7 +19,7 @@ import { DOCS_URL, GATOR_URL, SUPPORT_URL } from "@/lib/site";
 import "./site-nav.css";
 
 const LINKS = [
-  { href: "/builder", label: "Builder", Icon: IconPencilBolt, external: false },
+  { href: "/", label: "Builder", Icon: IconPencilBolt, external: false },
   { href: `${GATOR_URL}/servers`, label: "Dashboard", Icon: IconLayoutDashboard, external: true },
   { href: DOCS_URL, label: "Documentation", Icon: IconBook2, external: true },
   { href: SUPPORT_URL, label: "Support", Icon: IconLifebuoy, external: true },
@@ -30,7 +30,37 @@ const LINKS = [
    wrong link for a frame. Picking per environment is the usual way out. */
 const useMeasure = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-export function SiteNav({ user, canSignIn = true, compact = false, links = true, leading, children }) {
+/* The account chip. It promises "your saved mockups", so on the builder — where
+   that panel is already on screen behind a rail button — it opens the panel
+   instead of navigating to the page it is already on. Everywhere else it is a
+   link back to the tool. */
+function ProfileChip({ user, onOpen }) {
+  const face = (
+    <>
+      {user.image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="g-profile-face" src={user.image} alt="" />
+      ) : (
+        <span className="g-profile-face g-profile-mono" aria-hidden="true">
+          {(user.name ?? "A").slice(0, 1).toUpperCase()}
+        </span>
+      )}
+      <span className="g-profile-name">{user.name ?? "Account"}</span>
+    </>
+  );
+
+  return onOpen ? (
+    <button type="button" className="g-profile" onClick={onOpen}>
+      {face}
+    </button>
+  ) : (
+    <Link className="g-profile" href="/">
+      {face}
+    </Link>
+  );
+}
+
+export function SiteNav({ user, canSignIn = true, compact = false, links = true, onProfile, leading, children }) {
   const here = usePathname();
   const box = useRef(null);
   const tabs = useRef(new Map());
@@ -140,21 +170,11 @@ export function SiteNav({ user, canSignIn = true, compact = false, links = true,
 
           {user ? (
             <HoverTip label="Your saved mockups" align="end">
-              <Link className="g-profile" href="/builder?panel=cloud">
-                {user.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img className="g-profile-face" src={user.image} alt="" />
-                ) : (
-                  <span className="g-profile-face g-profile-mono" aria-hidden="true">
-                    {(user.name ?? "A").slice(0, 1).toUpperCase()}
-                  </span>
-                )}
-                <span className="g-profile-name">{user.name ?? "Account"}</span>
-              </Link>
+              <ProfileChip user={user} onOpen={onProfile} />
             </HoverTip>
           ) : canSignIn ? (
             <HoverTip label="Sign in with Discord to save to the cloud" align="end">
-              <a className="g-signin" href="/api/auth/signin?callbackUrl=%2Fbuilder">
+              <a className="g-signin" href="/api/auth/signin?callbackUrl=%2F">
                 <IconBrandDiscord size={16} stroke={1.9} />
                 Sign in
               </a>
