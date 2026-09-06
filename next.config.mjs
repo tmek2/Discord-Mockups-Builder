@@ -19,7 +19,7 @@ const nextConfig = {
         headers: [{ key: "cache-control", value: "public, max-age=31536000, immutable" }],
       },
       {
-        source: "/favicon.svg",
+        source: "/favicon.:ext(svg|ico)",
         headers: [{ key: "cache-control", value: "public, max-age=604800" }],
       },
       {

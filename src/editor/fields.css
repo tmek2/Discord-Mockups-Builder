@@ -24,6 +24,9 @@
   font-size: 11.5px;
   font-weight: 800;
   letter-spacing: 0.012em;
+  /* It is a real <label> pointing at its control, so pressing it focuses the
+     control. Saying so costs one line. */
+  cursor: pointer;
 }
 .e-field-hint {
   color: var(--g-ink-faint);
@@ -493,6 +496,10 @@ textarea.e-control {
   overflow-y: auto;
   padding: 8px;
 }
+.e-avatars[data-inline="true"] .e-avatars-grid {
+  max-height: 154px;
+}
+
 .e-avatar-cell {
   padding: 2px;
   border: 2px solid transparent;

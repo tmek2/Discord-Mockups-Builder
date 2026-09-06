@@ -165,6 +165,22 @@ export function Message({ message, selected, onSelect }) {
         message.ephemeral ? " dc-ephemeral" : ""
       }${message.pinned ? " dc-pinned" : ""}`}
       onClick={onSelect}
+      /* Clickable means reachable: without these the canvas is a wall a
+         keyboard cannot get into, and the focus ring the stylesheet draws
+         would never appear. Only when it actually does something. */
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      aria-pressed={onSelect ? Boolean(selected) : undefined}
+      onKeyDown={
+        onSelect
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelect();
+              }
+            }
+          : undefined
+      }
       data-id={message.id}
     >
       {message.pinned ? <div className="dc-pin-flag">Pinned</div> : null}

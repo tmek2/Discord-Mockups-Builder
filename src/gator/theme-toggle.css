@@ -97,8 +97,11 @@
 .g-theme-tip {
   position: absolute;
   top: calc(100% + 9px);
-  left: 50%;
-  z-index: 20;
+  /* Anchored to the control's right edge, not centred on it. This control is
+     the last thing in a right-aligned group, so a centred label hangs off the
+     side of the viewport — which it did, by 24px. */
+  right: 0;
+  z-index: 60;
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -110,7 +113,7 @@
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, -3px);
+  transform: translateY(-3px);
   transition:
     opacity 140ms var(--g-ease-state),
     transform 220ms var(--g-ease-out);
@@ -130,13 +133,13 @@
 @media (hover: hover) {
   .g-theme:hover .g-theme-tip {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translateY(0);
   }
 }
 .g-theme:focus-visible .g-theme-tip,
 .g-theme:has(:focus-visible) .g-theme-tip {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translateY(0);
 }
 /* Nothing to say before the setting has been read. */
 .g-theme[data-ready="false"] .g-theme-tip {

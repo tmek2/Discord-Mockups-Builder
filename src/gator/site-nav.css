@@ -183,7 +183,14 @@
     border-color var(--g-fast) var(--g-ease-state),
     background-color var(--g-fast) var(--g-ease-state);
 }
-.g-signin:hover {
+/* The unavailable state. Still drawn, still says what it is, but visibly not
+   a thing to press. */
+.g-signin[data-inert="true"] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.g-signin:not([data-inert="true"]):hover {
   border-color: var(--g-accent-line);
   background: var(--g-accent-soft);
 }

@@ -1436,12 +1436,67 @@
 
 /* --------------------------------------------------------------- select */
 
-/* Selection in the editor. Not part of the client — a dashed accent ring so a
-   picked message is obvious without moving anything, since a border would
-   reflow the message it is drawn on. */
+/* Picking a message on the canvas.
+ *
+ * Discord already has a vocabulary for "this row matters": hovering lifts a
+ * row a shade, and a mention washes it in the accent with a bar down the left
+ * edge. Selection here is that same pair, so the canvas keeps reading as
+ * Discord rather than as Discord with editor chrome stuck on top. A ring was
+ * the wrong borrow — the client never draws one, so it read as a border on
+ * the message rather than as a state of the editor.
+ *
+ * Both are backgrounds and a pseudo-element, so nothing reflows: a message
+ * does not move when you point at it or pick it. */
+.dc-message,
+.dc-system {
+  position: relative;
+  cursor: pointer;
+}
+
+/* The hover shade. `(hover: hover)` because a touch screen keeps :hover on the
+   last thing tapped, which would leave a row lit with nothing pointing at it.
+   `:not(.dc-selected)` so pointing at the row you already picked does not
+   wash the accent out with a grey. */
+@media (hover: hover) {
+  .dc-message:not(.dc-selected):hover,
+  .dc-system:not(.dc-selected):hover {
+    background: var(--background-message-hover);
+  }
+}
+
 .dc-selected {
-  box-shadow: inset 0 0 0 1px var(--g-accent, #f7a8c4);
-  border-radius: 4px;
+  /* Gator's accent at the weight the client washes a mention in. Ours rather
+     than Discord's own token, because being picked is a fact about the editor
+     and it should look like the editor said it. */
+  background: rgba(247, 168, 196, 0.1);
+  background: color-mix(in srgb, var(--g-accent) 13%, transparent);
+}
+/* And its bar, in the gutter rather than inside the text column, which is
+   where the client puts it. */
+.dc-selected::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: var(--g-accent, #f7a8c4);
+}
+
+/* None of this belongs in an exported PNG: it says which message the editor
+   has picked, which is not part of the mockup. */
+[data-exporting="true"] .dc-selected {
+  background: none;
+}
+[data-exporting="true"] .dc-selected::before {
+  display: none;
+}
+
+/* Keyboard users get a real focus ring; pointer users get the wash above. */
+.dc-message:focus-visible,
+.dc-system:focus-visible {
+  outline: 2px solid var(--g-accent, #f7a8c4);
+  outline-offset: -2px;
 }
 
 /* A message arriving.

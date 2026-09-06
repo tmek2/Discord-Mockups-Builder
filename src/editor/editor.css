@@ -102,83 +102,141 @@
   background: var(--g-raise);
 }
 
-/* Five sections in a 280px column. Beside their icons the labels do not fit at
-   any width this rail is ever drawn at — the last two fell off the edge — so
-   they sit under them and the rail is a five-column grid rather than a row
-   that scrolls. A rail you have to scroll to see all of is a rail whose last
-   item nobody finds. */
-.e-sections {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 2px;
-  padding: 8px;
+/* The left column's heading. It replaced a five-way rail whose other four
+   entries swapped out the inspector — so picking "Members" hid the message you
+   were editing. Those live in sheets now and this column does one job. */
+.e-left-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px 12px;
   border-bottom: 1px solid var(--g-line);
 }
-
-.e-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 1px;
-  border: 0;
-  border-radius: var(--g-r-inset);
-  background: transparent;
+.e-left-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   color: var(--g-ink-faint);
-  font: inherit;
-  /* Ten pixels, and tightened: "Messages" is the longest of the five and has
-     to fit a fifth of a 280px rail without an ellipsis. A label that truncates
-     is a label that has to be guessed at. */
-  font-size: 10px;
+}
+.e-left-count {
+  display: inline-grid;
+  min-width: 20px;
+  height: 20px;
+  place-items: center;
+  padding: 0 6px;
+  border-radius: var(--g-r-pill);
+  background: var(--g-fill-2);
+  color: var(--g-ink-dim);
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The appearance control in the bar above the preview. It reads as the label
+   it replaced until you go near it, then it reads as a button. */
+.e-stage-appearance {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--g-r-inset);
+  background: none;
+  color: var(--g-ink-dim);
+  font-family: inherit;
+  font-size: 12.5px;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  text-transform: capitalize;
   cursor: pointer;
   transition:
-    background-color var(--g-fast) var(--g-ease-state),
-    color var(--g-fast) var(--g-ease-state),
-    transform 90ms var(--g-ease-out);
+    background var(--g-fast) var(--g-ease-state),
+    border-color var(--g-fast) var(--g-ease-state),
+    color var(--g-fast) var(--g-ease-state);
 }
-.e-section span {
-  overflow: hidden;
-  max-width: 100%;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.e-section:hover {
+.e-stage-appearance:hover {
+  border-color: var(--g-line);
+  background: var(--g-fill-2);
   color: var(--g-ink);
 }
-/* No background of its own: the blob behind it is the fill, and two of them
-   stacked made the hovered item a shade darker than the blob it sat on. The
-   current one is said in ink and in a bar under it, not in a second fill. */
-.e-section {
-  position: relative;
-  z-index: 1;
+.e-stage-appearance:active {
+  transform: translateY(1px);
 }
-.e-section[data-on="true"] {
-  color: var(--g-accent-ink);
+
+/* Who sent the message: the face, the picker, and the way into editing them. */
+.e-author {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--g-line);
+  border-radius: var(--g-r-inset);
+  background: var(--g-fill);
 }
-.e-section[data-on="true"]::after {
-  content: "";
-  position: absolute;
-  bottom: 1px;
-  left: 50%;
-  width: 16px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--g-accent);
-  transform: translateX(-50%);
-  animation: e-underline 240ms var(--g-ease-out);
+.e-author-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
 }
-@keyframes e-underline {
-  from {
-    width: 0;
-    opacity: 0;
-  }
+.e-author-face {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  /* A circle, because that is what the client draws and this is a preview of
+     the same thing. */
+  border-radius: 50%;
+  border: 1px solid var(--g-line);
+  background: var(--g-fill-2);
+  color: var(--g-ink-faint);
+  margin-bottom: 1px;
 }
-.e-section:active {
-  transform: scale(0.94);
-  transition-duration: 0s;
+.e-author-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.e-author-pick {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+}
+.e-author-edit {
+  flex: none;
+}
+.e-author-edit-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--g-line);
+}
+
+/* Nothing selected. Rare, but a blank column reads as broken. */
+/* Names the row of icons under the outline, so it is clear they act on the
+   message that is picked and not on the mockup as a whole. */
+.e-outline-tools-label {
+  margin-right: auto;
+  padding-left: 2px;
+  color: var(--g-ink-faint);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.e-right-empty {
+  padding: 28px 18px;
+  color: var(--g-ink-faint);
+  font-size: 13px;
+  text-align: center;
+}
+.e-right-empty p {
+  margin: 0 0 4px;
 }
 
 .e-outline {
@@ -338,6 +396,7 @@
 }
 .e-outline-tools {
   display: flex;
+  align-items: center;
   gap: 4px;
 }
 
@@ -472,9 +531,13 @@
    enough presence to read as a surface. The phone's is a screen's worth,
    because a phone frame two inches tall does not look like a phone.
    Ordered longest-selector-last so the phone's value wins — both are two
-   classes, so the cascade decides on order and not on specificity. */
+   classes, so the cascade decides on order and not on specificity.
+
+   The desktop value was 220px, which left a single message floating above a
+   hand's width of empty plate — read, reasonably, as the tool having drawn a
+   black box for no reason. Enough to be a surface, not enough to be a void. */
 .e-frame .dc {
-  min-height: 220px;
+  min-height: 132px;
 }
 .e-frame-phone .dc {
   min-height: 660px;
@@ -595,9 +658,6 @@
   .e-right-body {
     animation: none;
   }
-  .e-section[data-on="true"]::after {
-    animation: none;
-  }
 }
 
 /* The legal line. It has to be reachable, and it has to be the last thing the
@@ -705,6 +765,32 @@
     transform 200ms cubic-bezier(0.4, 0, 1, 1);
 }
 
+/* Wide enough for a member list with avatars beside it; the templates grid
+   stays at its own measure. */
+.e-sheet[data-wide="true"] {
+  width: min(940px, 100%);
+}
+
+/* The heading row: title and subtitle on the left, the close button pinned
+   top-right where every dialog on the web keeps it. */
+.e-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.e-sheet-headings {
+  flex: 1;
+  min-width: 0;
+}
+.e-sheet-x {
+  flex: none;
+  margin-top: -2px;
+}
+.e-sheet-body {
+  min-height: 0;
+}
+
 .e-sheet-head h2 {
   margin: 0 0 4px;
   font-family: var(--font-merriweather), Georgia, serif;
@@ -713,9 +799,10 @@
   letter-spacing: -0.02em;
 }
 .e-sheet-head p {
-  margin: 0 0 18px;
+  margin: 0;
   color: var(--g-ink-dim);
   font-size: 13px;
+  line-height: 1.5;
 }
 
 .e-template-grid {
@@ -923,7 +1010,6 @@
   }
   .e-btn:active:not(:disabled),
   .e-icon-btn:active:not(:disabled),
-  .e-section:active,
   .e-tab:active,
   .e-outline-row:active {
     transform: none;

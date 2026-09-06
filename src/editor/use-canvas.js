@@ -108,9 +108,13 @@ export function useCanvasGestures({ scrollerRef, zoom, setZoom }) {
         moved: false,
         id: event.pointerId,
       };
-      // Capture, so the canvas keeps following the pointer when it leaves the
-      // stage — a drag that dies at the panel's edge is a drag that fights you.
-      event.currentTarget.setPointerCapture(event.pointerId);
+      /* Capture is claimed when the drag starts, not here.
+         While a pointer is captured the browser dispatches the trailing
+         `click` at the capturing element rather than at what was under the
+         pointer — so capturing on press meant a plain click on a message
+         landed on the scroller and the message never heard about it. Clicking
+         a message on the canvas is how you choose which one to edit, so it
+         has to survive. The drag still captures; see the move handler. */
     },
     [scrollerRef, stopGlide],
   );
@@ -131,6 +135,16 @@ export function useCanvasGestures({ scrollerRef, zoom, setZoom }) {
       if (!grab.moved) {
         grab.moved = true;
         setDragging(true);
+        /* Now it is a drag, so take the pointer: the canvas has to keep
+           following it out over the panels, and a drag that dies at the
+           stage's edge is a drag that fights you. Nothing is expecting a
+           click any more — the one that follows is swallowed on pointer-up. */
+        try {
+          event.currentTarget.setPointerCapture(grab.id);
+        } catch {
+          // Capture can be refused if the pointer has already gone; the pan
+          // still works, it just stops at the stage's edge.
+        }
       }
 
       tracker.current.add(event.clientX, event.clientY);

@@ -19,14 +19,28 @@ export default function Terms() {
           pretend something real happened, to impersonate anybody, or to hurt anybody. What you make with it is
           your responsibility, not ours.
         </p>
+        <p>
+          <strong>These terms cover this tool only</strong> &mdash; the mockup builder at mockups.gatorsys.xyz.
+          They are not the terms for the Gator bot, for gatorsys.xyz, or for the dashboard. Those have their own,
+          and using this page changes nothing about them.
+        </p>
       </div>
 
-      <h2>1. What this is</h2>
+      <h2>1. What this is, and what it is not</h2>
       <p>
         Gator Mockups (&ldquo;the tool&rdquo;) is a free visual editor for drawing what a Discord message would
         look like. It renders a picture of the Discord client. It does not connect to Discord, it cannot read or
-        send anything on Discord, and nothing you build here is ever posted anywhere. It is part of{" "}
-        <strong>Gator</strong> (&ldquo;we&rdquo;, &ldquo;us&rdquo;), alongside the Gator bot and gatorsys.xyz.
+        send anything on Discord, and nothing you build here is ever posted anywhere.
+      </p>
+      <p>
+        It is made by the same people as the rest of <strong>Gator</strong> (&ldquo;we&rdquo;,
+        &ldquo;us&rdquo;), but it is a separate thing that happens to share a sign-in.{" "}
+        <strong>
+          Everything on this page is about the mockup builder and nothing else.
+        </strong>{" "}
+        The Gator bot, gatorsys.xyz, the dashboard and the documentation are separate services with their own
+        terms; nothing here grants, limits or describes anything about them. If you are looking for the bot&rsquo;s
+        terms, they are not this page.
       </p>
       <p>
         By using the tool you agree to these terms. If you do not agree with them, do not use it — nothing here
@@ -49,6 +63,11 @@ export default function Terms() {
         your browser. We ask Discord only for <code>identify</code> — your user ID, username and avatar. We never
         ask for your servers, your messages, your email or your friends, and we cannot act on your Discord
         account.
+      </p>
+      <p>
+        Signing in here signs you in <em>here</em>. It gives this tool no access to anything the Gator bot can
+        see or do in your servers, and it is not a Gator account in any wider sense &mdash; the session is this
+        site&rsquo;s alone.
       </p>
       <p>
         You are responsible for what happens under your account. If you think somebody else has got into it,

@@ -10,8 +10,8 @@
  * form and eight of them in one column is a wall.
  */
 
-import { useRef } from "react";
-import { IconPlus, IconTrash } from "@tabler/icons-react";
+import { useRef, useState } from "react";
+import { IconPencil, IconPlus, IconTrash, IconUser, IconUsers } from "@tabler/icons-react";
 import {
   LIMITS,
   newAttachment,
@@ -28,6 +28,7 @@ import {
   Empty,
   Field,
   Group,
+  Hint,
   ImageField,
   Num,
   Pick,
@@ -36,6 +37,7 @@ import {
   Text,
   Toggle,
 } from "./fields";
+import { AvatarPicker } from "./panels";
 import { BlockList } from "./blocks";
 import { JsonPanel } from "./json-panel";
 import { EmojiInsert, EmojiSlot, useEmojiInsert } from "./emoji-picker";
@@ -53,7 +55,104 @@ const SYSTEM_KINDS = [
   { value: "follow", label: "Followed a channel" },
 ];
 
-function ContentTab({ message, patch, project, onError }) {
+/* Who sent this message, and who that person is.
+ *
+ * These were two different places: the picker here, and the member's own name
+ * and avatar behind a rail item that replaced this whole panel. So changing
+ * the name on the message you were looking at meant leaving the message you
+ * were looking at. The author's face is shown, the picker is next to it, and
+ * everything about that member is one disclosure below — edited in place,
+ * against the preview, which is the only way to tell whether it looks right.
+ */
+function AuthorRow({ message, patch, project, commit, onManageMembers, onError }) {
+  const [editing, setEditing] = useState(false);
+  const author = project.users.find((u) => u.id === message.user);
+
+  const patchAuthor = (fields) =>
+    commit((p) => ({
+      ...p,
+      users: p.users.map((u) => (u.id === message.user ? { ...u, ...fields } : u)),
+    }));
+
+  return (
+    <div className="e-author">
+      <div className="e-author-row">
+        <span className="e-author-face">
+          {author?.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={author.avatar} alt="" />
+          ) : (
+            <IconUser size={18} />
+          )}
+        </span>
+        <div className="e-author-pick">
+          <Field label="Sent by">
+            <Pick
+              value={message.user}
+              onChange={(v) => patch({ user: v })}
+              options={project.users.map((u) => ({ value: u.id, label: u.name }))}
+            />
+          </Field>
+        </div>
+        <Hint label={editing ? "Done editing this member" : "Change this member's name, colour and picture"}>
+          <button
+            type="button"
+            className="e-btn e-btn-quiet e-author-edit"
+            onClick={() => setEditing((v) => !v)}
+            aria-expanded={editing}
+          >
+            <IconPencil size={14} /> {editing ? "Done" : "Edit"}
+          </button>
+        </Hint>
+      </div>
+
+      {editing && author ? (
+        <div className="e-author-edit-box">
+          {/* Not side by side: the colour field is a swatch grid plus a hex
+              box, and at half the inspector's width it wrapped into three
+              ragged rows. */}
+          <Field label="Display name">
+            <Text value={author.name} onChange={(v) => patchAuthor({ name: v })} />
+          </Field>
+          <Field label="Name colour" hint="The role colour the client paints the name in.">
+            <ColorField value={author.color} onChange={(v) => patchAuthor({ color: v })} />
+          </Field>
+
+          <Field label="Picture" hint="Choose one of ours, or upload your own.">
+            <AvatarPicker
+              value={author.avatar}
+              onChange={(avatar) => patchAuthor({ avatar })}
+              onClose={() => {}}
+              inline
+            />
+          </Field>
+
+          <ImageField
+            round
+            label="Or upload one"
+            hint="Cropped to a square from the centre and masked into a circle, the way the client does it."
+            value={author.avatar?.startsWith("data:") ? author.avatar : ""}
+            onChange={(v) => patchAuthor({ avatar: v || author.avatar })}
+            onError={onError}
+          />
+
+          <Toggle
+            label="Application"
+            hint="Draws the APP tag beside the name."
+            value={author.bot}
+            onChange={(v) => patchAuthor({ bot: v })}
+          />
+
+          <button type="button" className="e-btn e-btn-quiet" onClick={onManageMembers}>
+            <IconUsers size={14} /> All members, decorations and role icons
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ContentTab({ message, patch, project, commit, onManageMembers, onError }) {
   const others = project.messages.filter((m) => m.id !== message.id && m.kind !== "system");
   const body = useRef(null);
   const insert = useEmojiInsert(body, message.content, (content) => patch({ content }));
@@ -61,13 +160,14 @@ function ContentTab({ message, patch, project, onError }) {
   return (
     <>
       <Group title="Message">
-        <Field label="Sent by">
-          <Pick
-            value={message.user}
-            onChange={(v) => patch({ user: v })}
-            options={project.users.map((u) => ({ value: u.id, label: u.name }))}
-          />
-        </Field>
+        <AuthorRow
+          message={message}
+          patch={patch}
+          project={project}
+          commit={commit}
+          onManageMembers={onManageMembers}
+          onError={onError}
+        />
 
         <Field label="Kind" hint="A system message is the client's own one-line notice, not a message with an author.">
           <Segmented
@@ -817,7 +917,7 @@ function ExtrasTab({ message, patch, project, onError }) {
 
 export const TABS = ["Content", "Embeds", "Components", "Extras", "JSON"];
 
-export function Inspector({ tab, message, project, patch, onError, onNotify }) {
+export function Inspector({ tab, message, project, patch, commit, onManageMembers, onError, onNotify }) {
   if (!message) return <Empty>Pick a message on the left, or add one.</Empty>;
 
   switch (tab) {
@@ -843,6 +943,15 @@ export function Inspector({ tab, message, project, patch, onError, onNotify }) {
     case "JSON":
       return <JsonPanel message={message} patch={patch} onError={onError} onNotify={onNotify} />;
     default:
-      return <ContentTab message={message} patch={patch} project={project} onError={onError} />;
+      return (
+        <ContentTab
+          message={message}
+          patch={patch}
+          project={project}
+          commit={commit}
+          onManageMembers={onManageMembers}
+          onError={onError}
+        />
+      );
   }
 }

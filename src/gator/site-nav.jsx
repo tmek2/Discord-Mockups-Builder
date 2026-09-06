@@ -168,18 +168,34 @@ export function SiteNav({ user, canSignIn = true, compact = false, links = true,
         <div className="g-nav-tools">
           <ThemeToggle />
 
+          {/* This slot is never empty.
+              Whether you can sign in is a property of the deployment, not
+              something a visitor did — so a deployment without the keys used
+              to render nothing at all here, leaving the corner where every
+              other Gator site keeps the account bare. All three states are
+              drawn; only the third is inert. */}
           {user ? (
             <HoverTip label="Your saved mockups" align="end">
               <ProfileChip user={user} onOpen={onProfile} />
             </HoverTip>
           ) : canSignIn ? (
-            <HoverTip label="Sign in with Discord to save to the cloud" align="end">
+            <HoverTip label="Sign in with Discord to keep your mockups in the cloud" align="end">
               <a className="g-signin" href="/api/auth/signin?callbackUrl=%2F">
                 <IconBrandDiscord size={16} stroke={1.9} />
                 Sign in
               </a>
             </HoverTip>
-          ) : null}
+          ) : (
+            <HoverTip
+              label="Accounts are not set up on this deployment. Everything still saves in this browser."
+              align="end"
+            >
+              <span className="g-signin" data-inert="true" aria-disabled="true">
+                <IconBrandDiscord size={16} stroke={1.9} />
+                Sign in
+              </span>
+            </HoverTip>
+          )}
         </div>
       </div>
     </header>

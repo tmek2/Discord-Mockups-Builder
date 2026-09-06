@@ -13,7 +13,7 @@
  * interface can announce it was not designed.
  */
 
-import { useId, useRef, useState } from "react";
+import { createContext, useContext, useId, useRef, useState } from "react";
 import { IconPhoto, IconTrash, IconUpload } from "@tabler/icons-react";
 import * as SwitchPrimitive from "@radix-ui/react-switch";
 import * as SliderPrimitive from "@radix-ui/react-slider";
@@ -31,18 +31,33 @@ import { cn } from "@/lib/utils";
 import { readAsDataUrl, squareCrop } from "@/lib/image";
 import "./fields.css";
 
+/* The id of the control a Field wraps, handed down so the label can point at
+   it by name.
+ *
+ * This used to be an implicit association — a <label> wrapped around
+ * everything — which names "the first labelable descendant". A button is
+ * labelable, so on the Content field the *emoji button* was claiming the
+ * label and the textarea was left with no accessible name at all; a screen
+ * reader announced it as an unnamed edit box. Explicit beats implicit here. */
+const FieldContext = createContext(null);
+
 export function Field({ label, hint, children, counter, tip }) {
+  const base = useId();
+  const ids = { id: `${base}-c`, labelId: `${base}-l` };
+
   const body = (
-    <label className="e-field">
+    <div className="e-field">
       {label ? (
         <span className="e-field-head">
-          <span className="e-field-label">{label}</span>
+          <label className="e-field-label" id={ids.labelId} htmlFor={ids.id}>
+            {label}
+          </label>
           {counter ? <span className="e-field-counter">{counter}</span> : null}
         </span>
       ) : null}
-      {children}
+      <FieldContext.Provider value={label ? ids : null}>{children}</FieldContext.Provider>
       {hint ? <span className="e-field-hint">{hint}</span> : null}
-    </label>
+    </div>
   );
   if (!tip) return body;
   return (
@@ -68,8 +83,11 @@ export function Counter({ value = "", limit }) {
 
 export function Text({ value, onChange, limit, multiline, rows = 3, ref, className, ...rest }) {
   const over = limit && (value ?? "").length > limit;
+  const field = useContext(FieldContext);
   const shared = {
     ref,
+    id: field?.id,
+    "aria-labelledby": field?.labelId,
     value: value ?? "",
     onChange: (e) => onChange(e.target.value),
     "data-over": over ? "true" : "false",
@@ -140,9 +158,11 @@ export function Pick({ value, onChange, options, placeholder = "Choose" }) {
   const encode = (v) => (clearable && (v === "" || v == null) ? NONE : (v ?? ""));
   const decode = (v) => (v === NONE ? "" : v);
 
+  const field = useContext(FieldContext);
+
   return (
     <Select value={encode(value)} onValueChange={(v) => onChange(decode(v))}>
-      <SelectTrigger className="e-control h-10">
+      <SelectTrigger className="e-control h-10" id={field?.id} aria-labelledby={field?.labelId}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
@@ -382,6 +402,20 @@ export function ImageField({ value, onChange, label, hint, onError, round = fals
       </div>
       {hint ? <span className="e-field-hint">{hint}</span> : null}
     </div>
+  );
+}
+
+/* A hover label. Lives here rather than in the builder because the inspector
+   needs the same thing, and two of these would drift apart. */
+export function Hint({ label, keys, children }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent className="e-hint">
+        {label}
+        {keys ? <kbd>{keys}</kbd> : null}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

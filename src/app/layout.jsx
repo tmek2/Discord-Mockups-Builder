@@ -50,7 +50,17 @@ export const metadata = {
     siteName: SITE_NAME,
     type: "website",
   },
-  icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }] },
+  /* The SVG is the one browsers should use; the .ico is there because they
+     ask for /favicon.ico anyway — including on an error page, where the
+     document's own links may never render — and a 404 in the console is
+     noise somebody has to rule out later. */
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
+    ],
+    shortcut: "/favicon.ico",
+  },
 };
 
 export const viewport = {

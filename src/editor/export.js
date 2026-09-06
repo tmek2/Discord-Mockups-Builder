@@ -22,6 +22,21 @@ export async function exportPng(node, project) {
   // Waiting on the fonts means the raster has the real face in it rather than
   // the fallback the browser was still showing when the click landed.
   await document.fonts.ready;
+
+  /* Which message is picked is a fact about the editor, not about the mockup,
+     so it must not be in the picture. It cannot be stripped by the filter
+     below — that removes whole nodes, and the selected message is a node we
+     need — so the surface is flagged and the stylesheet drops the treatment
+     for the duration. */
+  node.setAttribute("data-exporting", "true");
+  try {
+    return await raster(toPng, node, project);
+  } finally {
+    node.removeAttribute("data-exporting");
+  }
+}
+
+async function raster(toPng, node, project) {
   const url = await toPng(node, {
     pixelRatio: project.canvas?.scale ?? 2,
     cacheBust: false,

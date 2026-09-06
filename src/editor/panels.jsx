@@ -32,15 +32,19 @@ import {
 /* The avatar grid loads 240 files. `loading="lazy"` on each one means the
    browser fetches the two rows in view rather than the whole set, which is
    the reason the collection is files rather than one inlined blob. */
-function AvatarPicker({ value, onChange, onClose }) {
+export function AvatarPicker({ value, onChange, onClose, inline = false }) {
   return (
-    <div className="e-avatars">
-      <header className="e-avatars-head">
-        <span>Pick an avatar</span>
-        <button type="button" className="e-btn e-btn-quiet" onClick={onClose}>
-          Done
-        </button>
-      </header>
+    <div className="e-avatars" data-inline={inline ? "true" : "false"}>
+      {/* Inline it is already inside a field that names it, and there is
+          nothing to dismiss — a "Done" that closes nothing is a dead control. */}
+      {inline ? null : (
+        <header className="e-avatars-head">
+          <span>Pick an avatar</span>
+          <button type="button" className="e-btn e-btn-quiet" onClick={onClose}>
+            Done
+          </button>
+        </header>
+      )}
       <div className="e-avatars-grid">
         {Array.from({ length: AVATAR_COUNT }, (_, i) => avatarUrl(i)).map((src) => (
           <button

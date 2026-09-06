@@ -72,6 +72,21 @@ export function SystemMessage({ message, user, selected, onSelect }) {
     <article
       className={`dc-system${selected ? " dc-selected" : ""}`}
       onClick={onSelect}
+      /* Same as a real message: clickable on the canvas means reachable from
+         the keyboard. */
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      aria-pressed={onSelect ? Boolean(selected) : undefined}
+      onKeyDown={
+        onSelect
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelect();
+              }
+            }
+          : undefined
+      }
       data-id={message.id}
     >
       <span className="dc-system-glyph" style={{ color: kind.tint }} aria-hidden="true">

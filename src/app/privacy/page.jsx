@@ -19,6 +19,12 @@ export default function Privacy() {
           sign in to save a copy, or you make a share link. There is no analytics, no advertising and no
           tracking of any kind, and we never see your Discord messages, servers or email.
         </p>
+        <p>
+          <strong>This policy covers this tool only</strong> &mdash; the mockup builder at
+          mockups.gatorsys.xyz. Everything described below is what <em>the builder</em> collects. The Gator bot,
+          gatorsys.xyz and the dashboard are separate services that collect different things and have their own
+          policies; nothing on this page describes them.
+        </p>
       </div>
 
       <h2>What stays on your device</h2>
@@ -96,6 +102,12 @@ export default function Privacy() {
             privacy policy
           </a>{" "}
           covers that.
+        </li>
+        <li>
+          <strong>The rest of Gator.</strong> This tool shares a Discord application with the bot and the
+          dashboard, which is why signing in feels familiar &mdash; but it holds its own data, in its own keys,
+          and reads none of theirs. Nothing the bot knows about your servers reaches this tool, and nothing you
+          build here reaches the bot.
         </li>
         <li>
           <strong>Vercel</strong> hosts the site, and a managed data store holds cloud copies and share links.

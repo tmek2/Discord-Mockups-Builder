@@ -247,6 +247,33 @@ src/
 
 There is no landing page. The builder is the site.
 
+## How the editor is arranged
+
+Three columns, and each one answers a different question.
+
+- **Left — what am I building?** The list of messages, in order, and nothing
+  else. Click one to edit it; drag it to move it.
+- **Middle — what does it look like?** The mockup, drawn as Discord draws it.
+  Messages here are live: hovering one lights it the way the client lights a
+  row, and clicking one selects it, so you can point at the thing you want to
+  change instead of finding it in a list.
+- **Right — the message you picked.** Content, embeds, components, extras and
+  the raw JSON, including who sent it and what that member looks like.
+
+Everything that is *not* one message — templates, members, appearance,
+backups — opens as a sheet over the editor. That is a deliberate change: they
+used to be entries in a left-hand rail that swapped out the inspector, which
+made "edit this message" and "edit the members" mutually exclusive. You could
+not change the name of the person sending the message you were looking at
+without leaving the message you were looking at.
+
+Selection follows the same rule as the rest of the canvas: it borrows
+Discord's own vocabulary rather than adding editor chrome on top. The picked
+message gets the accent wash and left bar the client uses for a mention;
+hovering an unpicked one gets the client's own hover shade. Both are
+suppressed while the PNG is being rasterised, because which message you have
+selected is not part of the mockup.
+
 `src/components/ui` is copied out of `gatorsys.xyz/src/components/ui` with the
 TypeScript stripped and nothing else changed — same Radix primitives, same
 markup, same Tailwind classes. `--gator-*` is bridged to the landing palette in

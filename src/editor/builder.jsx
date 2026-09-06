@@ -20,6 +20,7 @@ import {
   IconArrowUp,
   IconArrowForwardUp,
   IconCheck,
+  IconChevronDown,
   IconCloud,
   IconCopy,
   IconDeviceFloppy,
@@ -40,7 +41,6 @@ import {
   IconZoomOut,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SiteNav } from "@/gator/site-nav";
 import { Blob, useBlob } from "@/gator/blob";
 import { DiscordSurface } from "@/discord/surface";
@@ -49,6 +49,7 @@ import { TEMPLATES } from "@/lib/templates";
 import { SUPPORT_URL } from "@/lib/site";
 import { loadValue, saveValue } from "@/lib/storage";
 import { migrate, validProject } from "@/lib/validate";
+import { Hint } from "./fields";
 import { Inspector, TABS } from "./inspector";
 import { CanvasPanel, EmojiPanel, UsersPanel } from "./panels";
 import { BackupsPanel } from "./backups-panel";
@@ -58,33 +59,14 @@ import { forkProject } from "@/lib/fork";
 import { ID } from "@/lib/ids";
 import { Palette } from "./palette";
 import { useCanvasGestures } from "./use-canvas";
-import { useOverlay } from "./use-overlay";
+import { Sheet } from "./sheet";
 import { useReorder } from "./use-reorder";
 import "./editor.css";
 
-const SECTIONS = [
-  { id: "messages", label: "Messages", Icon: IconLayoutList },
-  { id: "users", label: "Members", Icon: IconUsers },
-  { id: "emojis", label: "Emoji", Icon: IconMoodSmile },
-  { id: "canvas", label: "Canvas", Icon: IconPalette },
-  { id: "backups", label: "Backups", Icon: IconCloud },
-];
 
 /* A hover label, with the shortcut where there is one. Every control that is
    an icon alone needs one — an icon is a guess until something names it — and
    the shortcut belongs here rather than in a help page nobody opens. */
-function Hint({ label, keys, children }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent className="e-hint">
-        {label}
-        {keys ? <kbd>{keys}</kbd> : null}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
 const STORE_KEY = "project";
 const SLUG_KEY = "slug";
 
@@ -96,14 +78,17 @@ export function Builder({ user, canSignIn = true, shared = null }) {
   const [slug, setSlug] = useState(() => ID.mockup());
   const [past, setPast] = useState([]);
   const [future, setFuture] = useState([]);
-  const [section, setSection] = useState("messages");
+  /* Which overlay is open, if any: "templates" | "members" | "appearance" |
+     "backups". These used to be sections that replaced the inspector, so
+     opening Members hid the message you were editing. They are sheets now —
+     the message and its preview stay behind them. */
+  const [sheetOpen, setSheetOpen] = useState(null);
   const [tab, setTab] = useState("Content");
   const [selected, setSelected] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [toast, setToast] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [savedLocally, setSavedLocally] = useState(true);
-  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [pane, setPane] = useState("preview");
   const [exporting, setExporting] = useState(false);
@@ -263,7 +248,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
     const next = newMessage(author, { content: "New message", timestamp: message?.timestamp ?? "Today at 10:03" });
     commit((p) => ({ ...p, messages: [...p.messages, next] }));
     setSelected(next.id);
-    setSection("messages");
+    setSheetOpen(null);
     setTab("Content");
     setPane("inspector");
   }, [commit, message, project.users]);
@@ -350,7 +335,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
       if (nextSlug) setSlug(nextSlug);
       else if (detach) setSlug(ID.mockup());
       setSelected(migrated.messages[0]?.id ?? null);
-      setSection("messages");
+      setSheetOpen(null);
       setTab("Content");
     },
     [commit, fail],
@@ -433,9 +418,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
   /* The same travelling indicator the site's header has, twice: on the rail
      and on the tabs. One shape moving reads as one control; five backgrounds
      fading in and out read as five. */
-  const railBlob = useBlob(section);
   const tabBlob = useBlob(tab);
-  const sheet = useOverlay(templatesOpen, 200);
 
   /* --------------------------------------------------------- shortcuts */
 
@@ -451,7 +434,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
       }
       if (event.key === "Escape") {
         setPaletteOpen(false);
-        setTemplatesOpen(false);
+        setSheetOpen(null);
         return;
       }
       if (typing) return;
@@ -476,7 +459,6 @@ export function Builder({ user, canSignIn = true, shared = null }) {
 
   /* ------------------------------------------------------------- render */
 
-  const panelTitle = SECTIONS.find((s) => s.id === section)?.label ?? "";
 
   return (
     <div className="e-app">
@@ -485,10 +467,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
         canSignIn={canSignIn}
         compact
         links={false}
-        onProfile={() => {
-          setSection("backups");
-          setPane("inspector");
-        }}
+        onProfile={() => setSheetOpen("backups")}
         leading={
           <div className="e-titlebar">
             <Hint label="Rename this mockup">
@@ -526,13 +505,18 @@ export function Builder({ user, canSignIn = true, shared = null }) {
             </button>
           </Hint>
           <Hint label="Start from a template">
-            <button type="button" className="e-btn e-btn-quiet" onClick={() => setTemplatesOpen(true)}>
+            <button type="button" className="e-btn e-btn-quiet" onClick={() => setSheetOpen("templates")}>
               <IconStack2 size={15} /> Templates
             </button>
           </Hint>
           <Hint label="Copy a link that carries the whole mockup">
             <button type="button" className="e-btn e-btn-quiet" onClick={doShare}>
               <IconShare2 size={15} /> Share
+            </button>
+          </Hint>
+          <Hint label="Saved copies of this mockup, in this browser and in the cloud">
+            <button type="button" className="e-btn e-btn-quiet" onClick={() => setSheetOpen("backups")}>
+              <IconCloud size={15} /> Backups
             </button>
           </Hint>
           <Hint label={`Export a PNG at ${project.canvas.scale}×`}>
@@ -546,24 +530,16 @@ export function Builder({ user, canSignIn = true, shared = null }) {
       <div className="e-body" data-pane={pane}>
         {/* ------------------------------------------------------ left */}
         <aside className="e-left">
-          <nav className="e-sections" aria-label="Sections" {...railBlob.boxProps}>
-            <Blob />
-            {SECTIONS.map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                type="button"
-                className="e-section"
-                data-on={section === id ? "true" : "false"}
-                onClick={() => setSection(id)}
-                {...railBlob.register(id)}
-              >
-                <Icon size={17} stroke={1.8} />
-                <span>{label}</span>
-              </button>
-            ))}
-          </nav>
+          {/* The left column is the message list and nothing else. It used to
+              carry a five-way rail whose other four entries swapped out the
+              inspector, which made "edit this message" and "edit the members"
+              mutually exclusive for no reason. */}
+          <header className="e-left-head">
+            <h2>Messages</h2>
+            <span className="e-left-count">{project.messages.length}</span>
+          </header>
 
-          {section === "messages" ? (
+          {true ? (
             <div className="e-outline">
               <ol className="e-outline-list" ref={outline}>
                 {project.messages.map((m, i) => {
@@ -643,7 +619,11 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                     <IconPlus size={15} /> Add a message
                   </button>
                 </Hint>
-                <div className="e-outline-tools">
+                {/* Four bare glyphs at the foot of a column do not say what
+                    they act on, and one of them deletes something. Naming the
+                    row costs a line and answers it. */}
+                <div className="e-outline-tools" role="group" aria-label="Selected message">
+                  <span className="e-outline-tools-label">Selected</span>
                   <Hint label="Move up">
                     <button type="button" className="e-icon-btn" onClick={() => moveMessage(-1)} aria-label="Move up">
                       <IconArrowUp size={15} />
@@ -675,7 +655,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                 phone this pane is where they live instead — drawn only at the
                 widths where the header is not showing them. */}
             <div className="e-left-narrow">
-              <button type="button" className="e-btn e-btn-quiet" onClick={() => setTemplatesOpen(true)}>
+              <button type="button" className="e-btn e-btn-quiet" onClick={() => setSheetOpen("templates")}>
                 <IconStack2 size={15} /> Templates
               </button>
               <button type="button" className="e-btn e-btn-quiet" onClick={doShare}>
@@ -711,7 +691,18 @@ export function Builder({ user, canSignIn = true, shared = null }) {
         {/* --------------------------------------------------- preview */}
         <main className="e-stage">
           <div className="e-stage-bar e-no-export">
-            <span className="e-stage-label">{project.canvas.platform === "mobile" ? "Phone" : "Desktop"} · {project.canvas.theme}</span>
+            {/* This said "Desktop · Ash" and did nothing, while the settings
+                it described lived behind a rail item called "Canvas". It is
+                the button now: the label you read is the thing you press. */}
+            <Hint label="Client, appearance, background and how much of Discord is drawn">
+              <button type="button" className="e-stage-appearance" onClick={() => setSheetOpen("appearance")}>
+                <IconPalette size={15} stroke={1.8} />
+                <span>
+                  {project.canvas.platform === "mobile" ? "Phone" : "Desktop"} · {project.canvas.theme}
+                </span>
+                <IconChevronDown size={14} stroke={2} />
+              </button>
+            </Hint>
             <span className="e-stage-spacer" />
             <Hint label="Zoom out">
               <button
@@ -767,7 +758,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                 selectedId={message?.id}
                 onSelect={(id) => {
                   setSelected(id);
-                  setSection("messages");
+                  setSheetOpen(null);
                 }}
                 innerRef={stage}
               />
@@ -778,8 +769,8 @@ export function Builder({ user, canSignIn = true, shared = null }) {
         {/* ------------------------------------------------- inspector */}
         <aside className="e-right">
           <header className="e-right-head">
-            <h2>{section === "messages" ? "Message" : panelTitle}</h2>
-            {section === "messages" && message ? (
+            <h2>Message</h2>
+            {message ? (
               <Hint label="Copy this message&rsquo;s payload">
                 <button type="button" className="e-btn e-btn-quiet" onClick={copyJson}>
                   <IconCopy size={14} /> Copy JSON
@@ -788,7 +779,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
             ) : null}
           </header>
 
-          {section === "messages" ? (
+          {message ? (
             <nav className="e-tabs" aria-label="Message parts" {...tabBlob.boxProps}>
               <Blob />
               {TABS.map((t) => (
@@ -812,41 +803,27 @@ export function Builder({ user, canSignIn = true, shared = null }) {
             </nav>
           ) : null}
 
-          <div className="e-right-body" key={`${section}:${tab}`}>
-            {section === "messages" ? (
+          <div className="e-right-body" key={tab}>
+            {message ? (
               <Inspector
                 tab={tab}
                 message={message}
                 project={project}
+                commit={commit}
                 patch={patchMessage}
+                onManageMembers={() => setSheetOpen("members")}
                 onError={fail}
                 onNotify={notify}
               />
-            ) : section === "users" ? (
-              <UsersPanel project={project} commit={commit} onError={fail} />
-            ) : section === "emojis" ? (
-              <EmojiPanel project={project} commit={commit} onError={fail} />
-            ) : section === "canvas" ? (
-              <CanvasPanel project={project} commit={commit} onError={fail} onChrome={setChrome} />
             ) : (
-              <BackupsPanel
-                project={project}
-                slug={slug}
-                user={user}
-                canSignIn={canSignIn}
-                savedLocally={savedLocally}
-                onLoad={(next, nextSlug, action) => {
-                  if (action === "import") importer.current?.click();
-                  else if (action === "export") exportProject(project);
-                  else load(next, nextSlug);
-                }}
-                onError={fail}
-                onNotify={notify}
-              />
+              <div className="e-right-empty">
+                <p>No message selected.</p>
+                <p>Pick one on the left, or add a new one.</p>
+              </div>
             )}
           </div>
 
-          {section === "messages" && message ? (
+          {message ? (
             <footer className="e-right-foot">
               <button type="button" className="e-btn e-btn-quiet" onClick={() => exportMessageJson(message, project.name)}>
                 <IconDownload size={14} /> Download the message JSON
@@ -871,53 +848,92 @@ export function Builder({ user, canSignIn = true, shared = null }) {
         ))}
       </nav>
 
-      {sheet.mounted ? (
-        <div className="e-sheet-scrim" data-state={sheet.state} onClick={() => setTemplatesOpen(false)}>
-          <div
-            className="e-sheet"
-            data-state={sheet.state}
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-label="Templates"
-          >
-            <header className="e-sheet-head">
-              <h2>Start from something</h2>
-              <p>Each one is built to show a different surface. Opening one replaces what is on the canvas.</p>
-            </header>
-            <ul className="e-template-grid">
-              {TEMPLATES.map((template) => (
-                <li key={template.id}>
-                  <button
-                    type="button"
-                    className="e-template"
-                    onClick={() => {
-                      load(template.build(), ID.mockup());
-                      setTemplatesOpen(false);
-                      notify(`Opened “${template.name}”.`);
-                    }}
-                  >
-                    <span className="e-template-name">{template.name}</span>
-                    <span className="e-template-hint">{template.hint}</span>
-                  </button>
-                </li>
-              ))}
-              <li>
-                <button
-                  type="button"
-                  className="e-template"
-                  onClick={() => {
-                    load(blankProject(), ID.mockup());
-                    setTemplatesOpen(false);
-                  }}
-                >
-                  <span className="e-template-name">Empty</span>
-                  <span className="e-template-hint">One message and two members. Build it up from there.</span>
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-      ) : null}
+      {/* The four things that are not the message you are editing. Each is a
+          sheet over the editor rather than a panel that replaces it, so what
+          you were working on is still there when you close it. */}
+      <Sheet
+        open={sheetOpen === "templates"}
+        onClose={() => setSheetOpen(null)}
+        title="Start from something"
+        subtitle="Each one is built to show a different surface. Opening one replaces what is on the canvas."
+      >
+        <ul className="e-template-grid">
+          {TEMPLATES.map((template) => (
+            <li key={template.id}>
+              <button
+                type="button"
+                className="e-template"
+                onClick={() => {
+                  load(template.build(), ID.mockup());
+                  setSheetOpen(null);
+                  notify(`Opened \u201c${template.name}\u201d.`);
+                }}
+              >
+                <span className="e-template-name">{template.name}</span>
+                <span className="e-template-hint">{template.hint}</span>
+              </button>
+            </li>
+          ))}
+          <li>
+            <button
+              type="button"
+              className="e-template"
+              onClick={() => {
+                load(blankProject(), ID.mockup());
+                setSheetOpen(null);
+              }}
+            >
+              <span className="e-template-name">Empty</span>
+              <span className="e-template-hint">One message and two members. Build it up from there.</span>
+            </button>
+          </li>
+        </ul>
+      </Sheet>
+
+      <Sheet
+        open={sheetOpen === "members"}
+        onClose={() => setSheetOpen(null)}
+        title="Members"
+        subtitle="Everyone who can send a message in this mockup. Pick who sent a message on the message itself."
+        wide
+      >
+        <UsersPanel project={project} commit={commit} onError={fail} />
+      </Sheet>
+
+      <Sheet
+        open={sheetOpen === "appearance"}
+        onClose={() => setSheetOpen(null)}
+        title="Appearance"
+        subtitle="Which client, which of Discord\u2019s four themes, and how much of the window is drawn around the message."
+      >
+        <CanvasPanel project={project} commit={commit} onError={fail} onChrome={setChrome} />
+      </Sheet>
+
+      <Sheet
+        open={sheetOpen === "backups"}
+        onClose={() => setSheetOpen(null)}
+        title="Backups"
+        subtitle="This browser keeps the working copy and your saved backups. Signing in keeps a copy that survives a cleared browser."
+        wide
+      >
+        <BackupsPanel
+          project={project}
+          slug={slug}
+          user={user}
+          canSignIn={canSignIn}
+          savedLocally={savedLocally}
+          onLoad={(next, nextSlug, action) => {
+            if (action === "import") importer.current?.click();
+            else if (action === "export") exportProject(project);
+            else {
+              load(next, nextSlug);
+              setSheetOpen(null);
+            }
+          }}
+          onError={fail}
+          onNotify={notify}
+        />
+      </Sheet>
 
       <Palette
           open={paletteOpen}
@@ -930,7 +946,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
             { label: "Copy a share link", run: doShare },
             { label: "Copy the message JSON", run: copyJson },
             { label: "Download the project file", run: () => exportProject(project) },
-            { label: "Open templates", run: () => setTemplatesOpen(true) },
+            { label: "Open templates", run: () => setSheetOpen("templates") },
             { label: "Undo", run: undo },
             { label: "Redo", run: redo },
             ...["light", "ash", "dark", "onyx"].map((theme) => ({
@@ -945,7 +961,9 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                   canvas: { ...p.canvas, platform: p.canvas.platform === "mobile" ? "desktop" : "mobile" },
                 })),
             },
-            ...SECTIONS.map((s) => ({ label: `Go to ${s.label}`, run: () => setSection(s.id) })),
+            { label: "Members", run: () => setSheetOpen("members") },
+            { label: "Appearance", run: () => setSheetOpen("appearance") },
+            { label: "Backups", run: () => setSheetOpen("backups") },
           ]}
       />
 
