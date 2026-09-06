@@ -37,6 +37,7 @@ import {
   Text,
   Toggle,
 } from "./fields";
+import { TOOLBAR_ACTIONS } from "@/discord/toolbar";
 import { AvatarPicker } from "./panels";
 import { BlockList } from "./blocks";
 import { JsonPanel } from "./json-panel";
@@ -776,6 +777,119 @@ function ExtrasTab({ message, patch, project, onError }) {
             onClick={() => patch({ voice: { duration: "0:14", progress: 0.35 } })}
           >
             <IconPlus size={15} /> Add a voice message
+          </button>
+        )}
+      </Group>
+
+      {/* The bar the client floats over a message you point at. It is in most
+          screenshots of Discord, so it is a thing a mockup needs to be able to
+          draw — and where a button sits decides what it looks like: an emoji
+          in the quick-reaction zone, a grey glyph in the action zone, exactly
+          as the client does it. */}
+      <Group title="Hover toolbar" collapsible open={Boolean(message.toolbar)}>
+        {message.toolbar ? (
+          <>
+            <div className="e-note">
+              Shown over this message, top right. The first zone is your quick
+              reactions in colour; the second is the client&rsquo;s own action
+              icons in grey.
+            </div>
+
+            <Field label="Quick reactions" hint="Up to five. The client shows the emoji you use most.">
+              <div className="e-stack">
+                {(message.toolbar.reactions ?? []).map((emoji, i) => (
+                  <Row key={i}>
+                    <EmojiSlot
+                      value={emoji}
+                      custom={project.emojis}
+                      onChange={(v) =>
+                        patch({
+                          toolbar: {
+                            ...message.toolbar,
+                            reactions: message.toolbar.reactions.map((x, j) => (j === i ? v : x)),
+                          },
+                        })
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="e-btn e-btn-quiet e-btn-icon"
+                      aria-label="Remove this reaction"
+                      onClick={() =>
+                        patch({
+                          toolbar: {
+                            ...message.toolbar,
+                            reactions: message.toolbar.reactions.filter((_, j) => j !== i),
+                          },
+                        })
+                      }
+                    >
+                      <IconTrash size={14} />
+                    </button>
+                  </Row>
+                ))}
+                {(message.toolbar.reactions ?? []).length < 5 ? (
+                  <button
+                    type="button"
+                    className="e-btn e-btn-dashed"
+                    onClick={() =>
+                      patch({
+                        toolbar: {
+                          ...message.toolbar,
+                          reactions: [...(message.toolbar.reactions ?? []), "\u2764\ufe0f"],
+                        },
+                      })
+                    }
+                  >
+                    <IconPlus size={15} /> Add a quick reaction
+                  </button>
+                ) : null}
+              </div>
+            </Field>
+
+            <Field label="Actions" hint="Which of the client's icons are drawn, in its own order.">
+              <div className="e-stack">
+                {TOOLBAR_ACTIONS.map((action) => (
+                  <Toggle
+                    key={action.id}
+                    label={action.label}
+                    value={(message.toolbar.actions ?? []).includes(action.id)}
+                    onChange={(on) =>
+                      patch({
+                        toolbar: {
+                          ...message.toolbar,
+                          /* Rebuilt from the catalogue rather than pushed, so
+                             the order is always the client's own however the
+                             toggles were flipped. */
+                          actions: TOOLBAR_ACTIONS.map((a) => a.id).filter((id) =>
+                            id === action.id ? on : (message.toolbar.actions ?? []).includes(id),
+                          ),
+                        },
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            </Field>
+
+            <button type="button" className="e-btn e-btn-quiet" onClick={() => patch({ toolbar: null })}>
+              <IconTrash size={14} /> Remove the toolbar
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="e-btn e-btn-dashed"
+            onClick={() =>
+              patch({
+                toolbar: {
+                  reactions: ["\u2764\ufe0f", "\ud83d\udc80", "\u2705"],
+                  actions: ["add-reaction", "translate", "code", "edit", "forward", "more"],
+                },
+              })
+            }
+          >
+            <IconPlus size={15} /> Show the hover toolbar
           </button>
         )}
       </Group>

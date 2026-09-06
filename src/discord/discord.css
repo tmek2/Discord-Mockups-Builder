@@ -58,9 +58,28 @@
 }
 
 /* With no chrome the stream is the whole surface and the canvas sets its own
-   padding; with chrome it takes the client's own gutters. */
+   padding; with chrome it takes the client's own gutters. The horizontal part
+   of that inset lands on the rows themselves — see `--dc-edge` below — so the
+   hover and selection washes reach the edge of the column. */
 .dc-chrome-none .dc-scroll {
-  padding: 24px;
+  --dc-edge: 24px;
+  padding-block: 24px;
+}
+/* Each row carries the canvas inset itself, so its background is the full
+   width of the column and a highlight runs edge to edge, the way the client
+   draws one. */
+.dc-chrome-none .dc-message {
+  padding-left: calc(16px + var(--dc-edge, 0px));
+  padding-right: calc(48px + var(--dc-edge, 0px));
+}
+.dc-chrome-none .dc-system {
+  padding-left: calc(16px + var(--dc-edge, 0px));
+  padding-right: calc(16px + var(--dc-edge, 0px));
+}
+/* The left accent bar belongs against the edge of the column, not indented by
+   the canvas inset. */
+.dc-chrome-none .dc-selected::before {
+  left: 0;
 }
 .dc-chrome-chat .dc-scroll,
 .dc-chrome-full .dc-scroll {
@@ -1530,4 +1549,61 @@
   .dc-system {
     animation: none;
   }
+}
+
+/* ------------------------------------------------------- hover toolbar */
+
+/* The bar the client floats over the message under the pointer.
+ *
+ * Pinned to the top-right and lifted so it overlaps the row's top edge — the
+ * client draws it half outside the message, which is why it reads as floating
+ * above the conversation rather than as part of the message. */
+.dc-hoverbar {
+  position: absolute;
+  top: -16px;
+  right: 16px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--background-surface-higher, var(--background-surface-high));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
+}
+.dc-chrome-none .dc-hoverbar {
+  right: calc(16px + var(--dc-edge, 0px));
+}
+.dc-mobile .dc-hoverbar {
+  right: 12px;
+}
+
+.dc-hoverbar-btn {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 4px;
+  color: var(--interactive-normal, var(--text-default));
+}
+/* The quick reactions are the emoji themselves, at the size the client draws
+   them in the bar. */
+.dc-hoverbar-emoji img,
+.dc-hoverbar-emoji .dc-emoji {
+  width: 20px;
+  height: 20px;
+}
+.dc-hoverbar-emoji {
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* The rule between the two zones, which is the whole reason they read as two
+   different kinds of button. */
+.dc-hoverbar-rule {
+  width: 1px;
+  height: 20px;
+  margin-inline: 2px;
+  background: var(--border-subtle);
 }

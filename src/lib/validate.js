@@ -124,6 +124,23 @@ export function validProject(p) {
         if (!m.attachments.every((a) => isObject(a) && isImage(a.src))) return false;
       }
       if (m.reactions !== undefined && !Array.isArray(m.reactions)) return false;
+      /* The hover toolbar. Its emoji are drawn through the same node as a
+         reaction, so a URL in there is a URL that reaches an `img`; the action
+         ids are looked up in a fixed catalogue, so anything unknown is dropped
+         at render rather than refused here. Bounded so a hostile project
+         cannot ask for ten thousand of either. */
+      if (m.toolbar !== undefined && m.toolbar !== null) {
+        const t = m.toolbar;
+        if (!isObject(t)) return false;
+        if (t.reactions !== undefined) {
+          if (!Array.isArray(t.reactions) || t.reactions.length > 10) return false;
+          if (!t.reactions.every((e) => typeof e === "string" && isImage(e))) return false;
+        }
+        if (t.actions !== undefined) {
+          if (!Array.isArray(t.actions) || t.actions.length > 20) return false;
+          if (!t.actions.every((a) => typeof a === "string" && a.length <= 40)) return false;
+        }
+      }
       if (m.sticker && !isImage(m.sticker.src)) return false;
       if (m.invite && !isImage(m.invite.icon)) return false;
       if (m.linkPreview) {

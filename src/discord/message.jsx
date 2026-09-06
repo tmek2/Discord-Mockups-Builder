@@ -20,6 +20,7 @@ import { Embed } from "./embed";
 import { Blocks } from "./components";
 import { Attachments, Invite, LinkPreview, Poll, Sticker, VoiceNote } from "./media";
 import { Reactions } from "./reactions";
+import { HoverToolbar } from "./toolbar";
 import { SystemMessage } from "./system";
 
 /** The check inside the APP tag on a verified application. */
@@ -184,6 +185,9 @@ export function Message({ message, selected, onSelect }) {
       data-id={message.id}
     >
       {message.pinned ? <div className="dc-pin-flag">Pinned</div> : null}
+      {/* The bar the client floats over a message you are pointing at. Drawn
+          when the mockup asks for it, because it is in most screenshots. */}
+      {message.toolbar ? <HoverToolbar toolbar={message.toolbar} /> : null}
       {target ? <ReplyLine target={target} users={users} /> : null}
       {message.interaction ? <InteractionLine interaction={message.interaction} users={users} /> : null}
 

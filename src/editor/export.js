@@ -36,13 +36,32 @@ export async function exportPng(node, project) {
   }
 }
 
+/* The screen's own corner radius on the phone.
+ *
+ * The device frame is 54px at the outside with an 8px bezel, so the glass
+ * inside it is 46. The export rasterises the surface rather than the frame, so
+ * without this the phone came out as a square-cornered rectangle while the
+ * desktop kept its rounding — which is not what either client looks like. */
+const PHONE_SCREEN_RADIUS = 46;
+
 async function raster(toPng, node, project) {
+  const canvas = project.canvas ?? {};
+  const radius = canvas.platform === "mobile" ? PHONE_SCREEN_RADIUS : (canvas.radius ?? 0);
+
   const url = await toPng(node, {
-    pixelRatio: project.canvas?.scale ?? 2,
+    pixelRatio: canvas.scale ?? 2,
     cacheBust: false,
     // The stage applies a zoom transform for the editor's own benefit; the
     // export is of the message, not of how far it happens to be zoomed.
-    style: { transform: "none", zoom: "1", boxShadow: "none", borderRadius: "0" },
+    style: {
+      transform: "none",
+      zoom: "1",
+      boxShadow: "none",
+      borderRadius: `${radius}px`,
+      // Without this the children paint over the rounded corners and the
+      // radius is invisible in the raster.
+      overflow: "hidden",
+    },
     filter: (el) => !el.classList?.contains("e-no-export"),
   });
   download(url, `${safeName(project.name)}.png`);

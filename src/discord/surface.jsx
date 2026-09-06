@@ -239,7 +239,20 @@ export function DiscordSurface({ project, selectedId, onSelect, innerRef }) {
 
         <div className="dc-main">
           {canvas.chrome !== "none" ? <ChannelHeader canvas={canvas} mobile={mobile} /> : null}
-          <div className="dc-scroll" style={{ padding: canvas.chrome === "none" ? canvas.padding : undefined }}>
+          {/* With no chrome the canvas sets its own inset — but only the
+              vertical half of it goes on the scroller. The horizontal half is
+              handed down as `--dc-edge` and added to each message's own
+              padding instead, so a hovered or selected row washes the full
+              width of the column the way the client does, rather than
+              stopping short of the edge. */}
+          <div
+            className="dc-scroll"
+            style={
+              canvas.chrome === "none"
+                ? { paddingBlock: canvas.padding, "--dc-edge": `${canvas.padding ?? 0}px` }
+                : undefined
+            }
+          >
             {stream}
           </div>
           {canvas.chrome !== "none" ? <Composer canvas={canvas} mobile={mobile} /> : null}
