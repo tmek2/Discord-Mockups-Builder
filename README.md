@@ -37,8 +37,9 @@ Live at **[mockups.gatorsys.xyz](https://mockups.gatorsys.xyz)**.
   browser or a different machine.
 - **Share links.** A fragment link carries the whole mockup after the `#`,
   which browsers never send anywhere, so nothing leaves the two people who have
-  it. Past about 28k it becomes a short link with a week's expiry instead,
-  which is also the one you can read out.
+  it. Past about 28k it becomes a short link instead, which is also the one you
+  can read out. Either way the recipient gets an independent copy, and a short
+  link expires after 14 days.
 
 ## How it moves
 
@@ -111,6 +112,39 @@ The Discord application needs
 (and `http://localhost:3000/api/auth/callback/discord` for local work). The
 only scope asked for is `identify` — a mockup belongs to a person, not to a
 server, so `guilds` would be asking for something never read.
+
+## Deploying it, and joining it to the rest of Gator
+
+Every variable name here is the one gatorsys.xyz already uses, so the values
+are copied across rather than reissued. There are no secrets of its own.
+
+1. **Import the repo** as its own Vercel project. `vercel.json` already sets
+   the framework, the build and the region — nothing to configure.
+2. **Add the domain** `mockups.gatorsys.xyz` to that project, and a `CNAME` to
+   `cname.vercel-dns.com` wherever gatorsys.xyz's DNS lives. It is a separate
+   deployment on a subdomain, not a route inside the main site.
+3. **Copy five variables** from the gatorsys.xyz project (Production, Preview
+   and Development):
+
+   | Copy from gatorsys.xyz | Change |
+   | --- | --- |
+   | `AUTH_SECRET` | same value |
+   | `DISCORD_CLIENT_ID` | same value |
+   | `DISCORD_CLIENT_SECRET` | same value |
+   | `REDIS_URL` | same instance — keys here are namespaced `gm:` |
+   | `AUTH_URL` | **`https://mockups.gatorsys.xyz`** — the one value that differs |
+
+4. **Add one redirect URI** to the same Discord application:
+   `https://mockups.gatorsys.xyz/api/auth/callback/discord`. Without it the
+   sign-in returns `invalid_redirect_uri`.
+
+Sharing `AUTH_SECRET` is deliberate: the session cookie is issued and read on
+each host separately, and matching the secret means somebody signed in on the
+dashboard is recognised here rather than being asked to authorise twice.
+
+`MONGODB_*` stays unset. `RATE_LIMIT_SALT` is optional — it falls back to
+`AUTH_SECRET`. Deploying with none of this set is still a working site; only
+sign-in, the cloud copy and short links switch off.
 
 ## Where the cloud copy lives
 

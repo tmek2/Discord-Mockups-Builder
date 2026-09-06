@@ -85,6 +85,12 @@ export function middleware(request) {
   return response;
 }
 
+/* `vercel.json` repeats nosniff, the referrer policy and X-Frame-Options.
+ * That is not redundancy to clean up: the matcher below skips Next's static
+ * output, and the platform headers cover it. They must never disagree with
+ * HEADERS above — a weaker value there silently wins on the deployment while
+ * every local check still passes, because vercel.json is not applied by
+ * `next start`. */
 export const config = {
   /* Everything except Next's own static output, which is immutable and
      fingerprinted. Auth routes are included on purpose so a sign-in flow is
