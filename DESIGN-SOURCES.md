@@ -57,6 +57,19 @@ feature flag. This is a visual editor, not the Discord client, and custom
 spacing and mixed content stay intentionally editable.
 
 ## Performance
+### Running the checks locally
+
+The regression suite drives a production build, not the dev server, because
+several of the things it checks — the immutable cache headers, the short-link
+fallback, the hydrated editor — do not exist or behave differently under
+`next dev`. Two things have to be true or the results are noise rather than
+failures: the server must be started *after* the build it is serving, since a
+rebuilt `.next` leaves the running process handing out HTML that points at
+chunk hashes no longer on disk, which fails hydration silently and times out
+every test that needs the editor to respond; and it needs `REDIS_URL` in its
+environment, or the short-link tests correctly report that short links are not
+configured.
+
 
 Two things were making a large mockup heavier than it needed to be, and both
 were measured rather than guessed.
