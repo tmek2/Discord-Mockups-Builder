@@ -123,24 +123,36 @@ are copied across rather than reissued. There are no secrets of its own.
 2. **Add the domain** `mockups.gatorsys.xyz` to that project, and a `CNAME` to
    `cname.vercel-dns.com` wherever gatorsys.xyz's DNS lives. It is a separate
    deployment on a subdomain, not a route inside the main site.
-3. **Copy five variables** from the gatorsys.xyz project (Production, Preview
-   and Development):
+3. **Set five variables** on Production:
 
-   | Copy from gatorsys.xyz | Change |
+   | Variable | Where it comes from |
    | --- | --- |
-   | `AUTH_SECRET` | same value |
-   | `DISCORD_CLIENT_ID` | same value |
-   | `DISCORD_CLIENT_SECRET` | same value |
-   | `REDIS_URL` | same instance — keys here are namespaced `gm:` |
-   | `AUTH_URL` | **`https://mockups.gatorsys.xyz`** — the one value that differs |
+   | `AUTH_URL` | `https://mockups.gatorsys.xyz` |
+   | `AUTH_SECRET` | **generate a new one** — `openssl rand -base64 32` |
+   | `DISCORD_CLIENT_ID` | the same Discord application as the rest of Gator |
+   | `DISCORD_CLIENT_SECRET` | the same Discord application |
+   | `REDIS_URL` | the same instance — or attach the store to this project |
 
-4. **Add one redirect URI** to the same Discord application:
+4. **Add one redirect URI** to that same Discord application:
    `https://mockups.gatorsys.xyz/api/auth/callback/discord`. Without it the
    sign-in returns `invalid_redirect_uri`.
 
-Sharing `AUTH_SECRET` is deliberate: the session cookie is issued and read on
-each host separately, and matching the secret means somebody signed in on the
-dashboard is recognised here rather than being asked to authorise twice.
+`AUTH_SECRET` must **not** be shared with gatorsys.xyz, and sharing it would
+buy nothing anyway. Neither deployment sets a cookie `domain`, so Auth.js
+issues a host-only session cookie: the one set on `www.gatorsys.xyz` is never
+sent to `mockups.gatorsys.xyz`, whatever the secret is. Signing in here is a
+separate session by construction, and a separate secret means a leak on one
+host cannot forge a session on the other. What *is* shared is the Discord
+application, so the second sign-in is a redirect the user does not have to
+re-approve.
+
+For `REDIS_URL`, prefer **Vercel → Storage → the existing Redis store →
+Connect Project** over copying the string: Vercel injects it, and a variable
+marked Sensitive cannot be read back out of the other project. `redisUrl()` in
+`src/lib/redis.js` accepts the names those integrations use (`REDIS_URL`,
+`KV_URL`, `UPSTASH_REDIS_URL`, `REDIS_CONNECTION_STRING`) and ignores the REST
+endpoint injected alongside them, so connecting the store is usually all it
+takes.
 
 `MONGODB_*` stays unset. `RATE_LIMIT_SALT` is optional — it falls back to
 `AUTH_SECRET`. Deploying with none of this set is still a working site; only

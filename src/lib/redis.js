@@ -27,15 +27,38 @@ let connecting = null;
 const READ_TIMEOUT_MS = 1500;
 const WRITE_TIMEOUT_MS = 3000;
 
-export const redisConfigured = () => Boolean(process.env.REDIS_URL);
+/* Where the connection string comes from.
+ *
+ * `REDIS_URL` is the name to set by hand, and the one gatorsys.xyz uses. The
+ * rest are what Vercel's storage integrations inject when a store is attached
+ * to a project — connecting the existing store to this project is easier and
+ * safer than copying a secret between them, and it means the value is never
+ * pasted anywhere.
+ *
+ * Only the Redis protocol is accepted. The same integrations also inject an
+ * HTTPS REST endpoint under a neighbouring name, and handing that to a socket
+ * client fails with something that reads like a network fault rather than a
+ * wrong variable. */
+const URL_VARS = ["REDIS_URL", "KV_URL", "UPSTASH_REDIS_URL", "REDIS_CONNECTION_STRING"];
+
+export function redisUrl() {
+  for (const name of URL_VARS) {
+    const value = process.env[name]?.trim();
+    if (value && /^rediss?:\/\//i.test(value)) return value;
+  }
+  return null;
+}
+
+export const redisConfigured = () => Boolean(redisUrl());
 
 async function connection() {
-  if (!process.env.REDIS_URL) return null;
+  const url = redisUrl();
+  if (!url) return null;
   if (client?.isOpen) return client;
 
   if (!connecting) {
     const next = createClient({
-      url: process.env.REDIS_URL,
+      url,
       socket: {
         connectTimeout: 3000,
         /* Bounded: give up after a few tries rather than looping and holding
