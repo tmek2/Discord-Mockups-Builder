@@ -1607,3 +1607,178 @@
   margin-inline: 2px;
   background: var(--border-subtle);
 }
+
+/* ------------------------------------------------------ canvas background */
+
+/* A custom image, or none at all, is set on the surface root — but the chat
+   column and the message scroller each paint the chat ground, so whatever was
+   behind them was completely hidden. When the canvas asks for something else,
+   they stand down and let it through. */
+.dc-bg-image .dc-main,
+.dc-bg-image .dc-scroll,
+.dc-bg-none .dc-main,
+.dc-bg-none .dc-scroll {
+  background: transparent;
+}
+/* The client's own chrome keeps its ground: a channel header floating on
+   somebody's wallpaper is not a thing Discord ever draws. */
+.dc-bg-image .dc-head,
+.dc-bg-image .dc-m-head,
+.dc-bg-image .dc-composer,
+.dc-bg-image .dc-m-composer {
+  background: var(--chat-background-default);
+}
+
+/* ------------------------------------------------------------- profile */
+
+/* Discord's profile popout. Metrics from the client: a 120px banner, an 80px
+   avatar that hangs off its bottom edge inside a 6px cut-out of the card, and
+   the badge tray in the body's top-right corner. */
+.dc-profile {
+  position: relative;
+  width: 340px;
+  max-width: 100%;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--background-surface-high);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+}
+.dc-profile-banner {
+  height: 120px;
+  background-size: cover;
+  background-position: center;
+}
+.dc-profile-avatar-slot {
+  position: absolute;
+  top: 76px;
+  left: 16px;
+  width: 92px;
+  height: 92px;
+}
+.dc-profile-avatar {
+  width: 92px;
+  height: 92px;
+  /* The ring is the card showing through, which is how the client cuts the
+     avatar out of the banner rather than drawing a border on it. */
+  border: 6px solid var(--background-surface-high);
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--background-base-lower);
+}
+.dc-profile-decoration {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 116px;
+  height: 116px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+/* On the avatar's edge, not inside it: the slot is 92px including a 6px ring,
+   so the dot has to sit outside that ring to land where the client puts it. */
+.dc-profile-presence {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 22px;
+  height: 22px;
+  border: 5px solid var(--background-surface-high);
+}
+
+.dc-profile-body {
+  position: relative;
+  padding: 52px 16px 16px;
+}
+/* The tray sits over the banner's lower edge, clear of the avatar. */
+.dc-profile-badges {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 190px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: var(--background-base-lower);
+}
+.dc-profile-badges img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.dc-profile-names {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dc-profile-display {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-strong);
+}
+.dc-profile-handle {
+  margin-top: 1px;
+  color: var(--text-default);
+  font-size: 0.875rem;
+}
+.dc-profile-bio {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-default);
+  font-size: 0.875rem;
+  line-height: 1.15rem;
+}
+.dc-profile-since {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--text-default);
+  font-size: 0.75rem;
+}
+.dc-profile-since strong {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+.dc-profile-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-strong);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.dc-profile-roles {
+  margin-top: 12px;
+}
+.dc-profile-role-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.dc-profile-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-default);
+  font-size: 0.75rem;
+}
+.dc-profile-role-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.dc-mobile .dc-profile {
+  width: 100%;
+}

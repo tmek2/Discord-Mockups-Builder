@@ -728,3 +728,57 @@ textarea.e-control {
   font-size: 12.5px;
   line-height: 1.55;
 }
+
+/* ---------------------------------------------------------- badge picker */
+
+.e-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.e-badge-group-name {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--g-ink-faint);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.e-badge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 5px;
+}
+/* The artwork is the control. A badge is recognised, not read, so a grid of
+   the marks themselves is faster to pick from than a list of their names —
+   and the name is a hover away for the ones nobody knows. */
+.e-badge {
+  display: grid;
+  aspect-ratio: 1;
+  place-items: center;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--g-fill);
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    opacity var(--g-fast) var(--g-ease-state),
+    border-color var(--g-fast) var(--g-ease-state),
+    transform var(--g-fast) var(--g-ease-out);
+}
+.e-badge:hover {
+  opacity: 1;
+  transform: scale(1.06);
+}
+.e-badge[data-on="true"] {
+  border-color: var(--g-accent-line);
+  background: var(--g-accent-soft);
+  opacity: 1;
+}
+.e-badge img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}

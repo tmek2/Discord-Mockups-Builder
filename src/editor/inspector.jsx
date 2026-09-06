@@ -37,6 +37,7 @@ import {
   Text,
   Toggle,
 } from "./fields";
+import { badgeList } from "@/discord/badges";
 import { TOOLBAR_ACTIONS } from "@/discord/toolbar";
 import { AvatarPicker } from "./panels";
 import { BlockList } from "./blocks";
@@ -777,6 +778,115 @@ function ExtrasTab({ message, patch, project, onError }) {
             onClick={() => patch({ voice: { duration: "0:14", progress: 0.35 } })}
           >
             <IconPlus size={15} /> Add a voice message
+          </button>
+        )}
+      </Group>
+
+      {/* Discord shows badges in the profile popout — not the member list and
+          not beside a name in a message — so this is where the badge library
+          belongs, and the popout is a surface mockups want in its own right. */}
+      <Group title="Profile card" collapsible open={Boolean(message.profile)}>
+        {message.profile ? (
+          <>
+            <div className="e-note">
+              Drawn under this message, for whoever sent it. The avatar, name, colour and app tag come
+              from the member, so this cannot disagree with the message above it.
+            </div>
+
+            <Row>
+              <Field label="Handle" hint="The @name under the display name.">
+                <Text
+                  value={message.profile.handle}
+                  onChange={(v) => patch({ profile: { ...message.profile, handle: v } })}
+                  placeholder="@name"
+                />
+              </Field>
+              <Field label="Member since">
+                <Text
+                  value={message.profile.since}
+                  onChange={(v) => patch({ profile: { ...message.profile, since: v } })}
+                  placeholder="12 Mar 2019"
+                />
+              </Field>
+            </Row>
+
+            <Field label="About me" hint="Markdown, the same as a message.">
+              <Text
+                multiline
+                rows={3}
+                value={message.profile.bio}
+                onChange={(v) => patch({ profile: { ...message.profile, bio: v } })}
+              />
+            </Field>
+
+            <ImageField
+              label="Banner"
+              hint="Leave empty for a flat band in the accent below."
+              value={message.profile.banner}
+              onChange={(v) => patch({ profile: { ...message.profile, banner: v } })}
+              onError={onError}
+            />
+            <Field label="Banner colour" hint="Used when there is no banner image.">
+              <ColorField
+                value={message.profile.accent}
+                onChange={(v) => patch({ profile: { ...message.profile, accent: v } })}
+              />
+            </Field>
+
+            <Field label="Badges" hint="Discord's own, at the size the client draws them.">
+              <div className="e-badges">
+                {badgeList().map((group) => (
+                  <div className="e-badge-group" key={group.group}>
+                    <span className="e-badge-group-name">{group.group}</span>
+                    <div className="e-badge-grid">
+                      {group.items.map((item) => {
+                        const on = (message.profile.badges ?? []).includes(item.id);
+                        return (
+                          <Hint key={item.id} label={item.label}>
+                            <button
+                              type="button"
+                              className="e-badge"
+                              data-on={on ? "true" : "false"}
+                              aria-pressed={on}
+                              aria-label={item.label}
+                              onClick={() =>
+                                patch({
+                                  profile: {
+                                    ...message.profile,
+                                    badges: on
+                                      ? message.profile.badges.filter((b) => b !== item.id)
+                                      : [...(message.profile.badges ?? []), item.id],
+                                  },
+                                })
+                              }
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={`/discord/badges/${item.id}.png`} alt="" loading="lazy" />
+                            </button>
+                          </Hint>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Field>
+
+            <button type="button" className="e-btn e-btn-quiet" onClick={() => patch({ profile: null })}>
+              <IconTrash size={14} /> Remove the profile card
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="e-btn e-btn-dashed"
+            onClick={() =>
+              patch({
+                profile: { handle: "", since: "", bio: "", banner: "", accent: "", badges: [] },
+              })
+            }
+          >
+            <IconPlus size={15} /> Add a profile card
           </button>
         )}
       </Group>

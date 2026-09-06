@@ -231,7 +231,17 @@ export function DiscordSurface({ project, selectedId, onSelect, innerRef }) {
         ref={innerRef}
         className={`dc dc-${canvas.theme || "ash"} dc-chrome-${canvas.chrome || "none"} ${
           mobile ? "dc-mobile" : "dc-desktop"
-        } dc-density-${canvas.density || "cozy"}`}
+        } dc-density-${canvas.density || "cozy"}${
+          /* The image and the transparent option both go on this element, and
+             the chat column inside it paints its own opaque ground — which is
+             why choosing an image appeared to do nothing at all. The flag lets
+             the stylesheet stand the column down. */
+          canvas.background === "custom" && canvas.customBackground
+            ? " dc-bg-image"
+            : canvas.background === "transparent"
+              ? " dc-bg-none"
+              : ""
+        }`}
         style={surfaceStyle}
       >
         {canvas.chrome === "full" && !mobile ? <ServerRail canvas={canvas} /> : null}

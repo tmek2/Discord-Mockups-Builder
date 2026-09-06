@@ -21,6 +21,7 @@ import { Blocks } from "./components";
 import { Attachments, Invite, LinkPreview, Poll, Sticker, VoiceNote } from "./media";
 import { Reactions } from "./reactions";
 import { HoverToolbar } from "./toolbar";
+import { ProfileCard } from "./profile";
 import { SystemMessage } from "./system";
 
 /** The check inside the APP tag on a verified application. */
@@ -239,6 +240,7 @@ export function Message({ message, selected, onSelect }) {
 
         {message.poll ? <Poll poll={message.poll} /> : null}
 
+        {message.profile ? <ProfileCard profile={message.profile} user={user} /> : null}
         {message.reactions?.length ? <Reactions reactions={message.reactions} /> : null}
 
         {message.thread ? <ThreadTag thread={message.thread} /> : null}

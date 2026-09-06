@@ -614,8 +614,12 @@
    proportions of the thing it is imitating. `min-height`, not `height`, so a
    long conversation grows the way a stitched screenshot does rather than
    being cut off at the fold. */
+/* The phone gets the same treatment as the desktop: it grows with the
+   conversation. A fixed 852px screen meant one message sat above two thirds of
+   a screen of empty plate, and the iPhone's proportions are carried by its
+   width and its corner radius, not by holding a height nothing is filling. */
 .e-frame-phone .dc {
-  min-height: 852px;
+  min-height: 132px;
 }
 
 /* --------------------------------------------------------------- right */

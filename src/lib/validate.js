@@ -142,6 +142,22 @@ export function validProject(p) {
         }
       }
       if (m.sticker && !isImage(m.sticker.src)) return false;
+      /* The profile card. Its badge ids are looked up in a fixed catalogue and
+         anything unknown is dropped at render, so they only need to be short
+         strings; the banner is a URL that reaches an `img`. */
+      if (m.profile !== undefined && m.profile !== null) {
+        const pr = m.profile;
+        if (!isObject(pr)) return false;
+        if (!isImage(pr.banner)) return false;
+        if (pr.badges !== undefined) {
+          if (!Array.isArray(pr.badges) || pr.badges.length > 40) return false;
+          if (!pr.badges.every((b) => typeof b === "string" && b.length <= 60)) return false;
+        }
+        if (pr.roles !== undefined) {
+          if (!Array.isArray(pr.roles) || pr.roles.length > 40) return false;
+          if (!pr.roles.every((r) => isObject(r))) return false;
+        }
+      }
       if (m.invite && !isImage(m.invite.icon)) return false;
       if (m.linkPreview) {
         const p = m.linkPreview;

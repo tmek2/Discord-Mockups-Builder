@@ -268,7 +268,10 @@ export const newCanvas = (over = {}) => ({
   density: "cozy",
   /** How much of the client is drawn around the messages. */
   chrome: "none",
-  width: 780,
+  /* 720. Wide enough for an embed at its full 520px plus the avatar gutter,
+     narrow enough that a screenshot drops into a document without being
+     scaled down — which is what most of these are for. */
+  width: 720,
   padding: 24,
   radius: 10,
   scale: 2,
