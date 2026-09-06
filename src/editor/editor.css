@@ -527,6 +527,36 @@
  * side means dragging always does something. The view is scrolled to the
  * middle of it on the first paint, so the empty room is around the mockup and
  * never in front of it. */
+/* The zoom shortcut, said out loud beside the zoom controls. */
+.e-zoom-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
+  color: var(--g-ink-faint);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.e-zoom-hint kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--g-line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--g-fill-2);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--g-ink-dim);
+}
+/* On a narrow stage the zoom buttons matter more than the sentence about
+   them. */
+@media (max-width: 1180px) {
+  .e-zoom-hint {
+    display: none;
+  }
+}
+
 .e-stage-pad {
   display: flex;
   margin: auto;

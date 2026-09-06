@@ -98,6 +98,10 @@ export function Embed({ embed }) {
                 <div
                   className="dc-embed-field"
                   key={field.id}
+                  /* The span is the desktop's twelve-column arithmetic. The
+                     phone re-columns from this flag instead, because an inline
+                     style cannot be overridden by a stylesheet. */
+                  data-inline={field.inline ? "true" : "false"}
                   style={{ gridColumn: `span ${fieldSpan(fields, i)}` }}
                 >
                   <div className="dc-embed-field-name">

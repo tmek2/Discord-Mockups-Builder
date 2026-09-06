@@ -41,10 +41,20 @@
 }
 
 .dc-scroll {
+  display: flex;
+  /* The stream sits at the *bottom* and grows upward, which is what a chat
+     does: the newest message is above the composer and the empty room is
+     overhead. Anchored with `margin-top: auto` on the stream rather than
+     `justify-content: flex-end`, because flex-end makes the overflow at the
+     top unreachable once the conversation is longer than the screen. */
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+}
+.dc-scroll > .dc-stream {
+  margin-top: auto;
 }
 
 /* With no chrome the stream is the whole surface and the canvas sets its own

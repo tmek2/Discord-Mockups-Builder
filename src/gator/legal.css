@@ -1,0 +1,372 @@
+/* The legal pages.
+ *
+ * Deliberately unlayered, like the rest of the landing stylesheets: Tailwind
+ * v3 emits its preflight from `@tailwind base` with no cascade layer, and an
+ * unlayered rule beats every layered one no matter how specific it is.
+ *
+ * A document, not a landing page. Which means one column of prose at a measure
+ * you can actually read, a contents list pinned beside it, and no decoration
+ * competing with the sentences. The gutter is the only thing holding the band
+ * off the edge, as everywhere else on the site.
+ */
+
+.g-legal {
+  position: relative;
+  min-height: 100dvh;
+  overflow-x: clip;
+  background: var(--g-ground);
+}
+
+/* The dotted ground. On gatorsys this is a canvas whose dots move out of the
+   way of the pointer; here it is the same repeating gradient the editor's
+   stage already draws, so the two surfaces of this app match each other
+   rather than carrying a second implementation of the same texture. Fixed, so
+   the field stays put while the document scrolls over it, with the mask the
+   original carried. */
+.g-legal-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(var(--g-line) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 100% 60% at 40% 0%, #000 8%, transparent 76%);
+  -webkit-mask-image: radial-gradient(ellipse 100% 60% at 40% 0%, #000 8%, transparent 76%);
+}
+
+.g-legal-main {
+  position: relative;
+  z-index: 1;
+  padding-inline: var(--g-gutter);
+}
+
+/* ------------------------------------------------------------------- head */
+
+.g-legal-head {
+  padding-block: clamp(48px, 9vh, 108px) clamp(32px, 5vh, 56px);
+  border-bottom: 1px solid var(--g-line);
+}
+.g-legal-date {
+  margin: 0 0 16px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--g-accent-ink);
+}
+.g-legal-title {
+  margin: 0 0 20px;
+  font-family: var(--font-merriweather), Georgia, serif;
+  font-size: clamp(2.2rem, 5.6vw, 4.4rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.038em;
+  color: var(--g-ink);
+}
+.g-legal-summary {
+  margin: 0;
+  max-width: 62ch;
+  font-size: clamp(15.5px, 1.3vw, 18px);
+  line-height: 1.6;
+  color: var(--g-ink-dim);
+}
+
+/* ------------------------------------------------------------------- body */
+
+.g-legal-body {
+  display: grid;
+  grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
+  gap: clamp(32px, 6vw, 96px);
+  padding-block: clamp(32px, 5vh, 60px) clamp(48px, 8vh, 96px);
+  align-items: start;
+}
+
+.g-legal-toc {
+  position: sticky;
+  top: 92px;
+}
+.g-legal-toc h2 {
+  margin: 0 0 14px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--g-ink-faint);
+}
+.g-legal-toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 1px;
+}
+.g-legal-toc a {
+  display: grid;
+  grid-template-columns: 2.4ch minmax(0, 1fr);
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  font-size: 13.5px;
+  line-height: 1.35;
+  color: var(--g-ink-dim);
+  text-decoration: none;
+  transition: background-color var(--g-fast) var(--g-ease-state), color var(--g-fast) var(--g-ease-state);
+}
+.g-legal-toc a:hover {
+  background: var(--g-fill-2);
+  color: var(--g-ink);
+}
+/* Where you are. A contents list with no current item is a list you have to
+   read twice to use. */
+.g-legal-toc a[data-current="true"] {
+  background: var(--g-accent-soft);
+  color: var(--g-ink);
+  font-weight: 600;
+}
+.g-toc-n {
+  font-variant-numeric: tabular-nums;
+  color: var(--g-ink-faint);
+}
+.g-legal-toc a[data-current="true"] .g-toc-n {
+  color: var(--g-accent-ink);
+}
+
+.g-legal-doc {
+  min-width: 0;
+  max-width: 72ch;
+}
+
+.g-legal-section {
+  scroll-margin-top: 104px;
+  padding-block: clamp(24px, 3.4vh, 40px);
+  border-bottom: 1px solid var(--g-line);
+}
+.g-legal-section:first-child {
+  padding-top: 0;
+}
+.g-legal-section:last-of-type {
+  border-bottom: 0;
+}
+.g-legal-section h2 {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 14px;
+  margin: 0 0 16px;
+  font-family: var(--font-merriweather), Georgia, serif;
+  font-size: clamp(1.25rem, 2.1vw, 1.65rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--g-ink);
+}
+.g-legal-n {
+  font-size: 0.68em;
+  font-variant-numeric: tabular-nums;
+  color: var(--g-accent-ink);
+}
+
+/* The document's own prose. Set once here so the two pages cannot drift. */
+.g-legal-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 15.5px;
+  line-height: 1.72;
+  color: var(--g-ink-dim);
+}
+.g-legal-copy p {
+  margin: 0;
+}
+.g-legal-copy ul,
+.g-legal-copy ol {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.g-legal-copy li {
+  position: relative;
+  padding-left: 22px;
+}
+.g-legal-copy li::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--g-accent);
+  opacity: 0.7;
+}
+.g-legal-copy strong {
+  color: var(--g-ink);
+  font-weight: 700;
+}
+.g-legal-copy a {
+  color: var(--g-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.g-legal-ask {
+  margin: clamp(28px, 4vh, 44px) 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--g-ink-faint);
+}
+.g-legal-ask a {
+  color: var(--g-accent-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ----------------------------------------------------------------- narrow */
+
+@media (max-width: 900px) {
+  .g-legal-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+  /* Pinned contents on a phone is a pinned block of links in the way of the
+     thing you came to read, so it becomes a plain list at the top instead. */
+  .g-legal-toc {
+    position: static;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--g-line);
+  }
+  .g-legal-toc ol {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+/* ------------------------------------------------------- reading progress */
+
+/* A line along the bottom edge of the header, as long as the part of the
+   document you have already passed.
+ *
+ * Along the very top of the window rather than under the header. It used to
+ * be pinned to the header's own bottom edge, which was right while the header
+ * was a full-width bar; now that it draws in to a floating pill, a full-width
+ * rule underneath it belongs to nothing and reads as a stray line across the
+ * page. At the top of the window it is a property of the window, which is what
+ * it is.
+ *
+ * Driven by the scroll itself, like the picker's header. A browser without
+ * scroll timelines leaves it at zero width, which is nothing rather than
+ * something wrong. */
+.g-legal-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  /* Above the bar, which is 40. The bar floats clear of the top edge, so the
+     line runs behind nothing. */
+  z-index: 41;
+  height: 2px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: var(--g-accent);
+  pointer-events: none;
+}
+
+@keyframes g-legal-read {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .g-legal-progress {
+    animation: g-legal-read linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+
+
+/* ------------------------------------------------------------------- bar */
+
+/* gatorsys floats its whole site nav here. This deployment has one route and
+   no nav to float, so the bar carries only what a document needs: the way
+   back, the mark, and the appearance control that every page has. */
+.g-legal-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px var(--g-gutter);
+  border-bottom: 1px solid var(--g-line);
+  background: color-mix(in srgb, var(--g-ground) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.g-legal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border-radius: var(--g-r-pill);
+  color: var(--g-ink-dim);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background var(--g-fast) var(--g-ease-state),
+    color var(--g-fast) var(--g-ease-state);
+}
+.g-legal-back:hover {
+  background: var(--g-fill-2);
+  color: var(--g-ink);
+}
+/* The mark sits in the middle so the bar reads the same whichever end you
+   started from, and takes the spare room on both sides. */
+.g-legal-brand {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: var(--g-accent-display, var(--g-accent));
+  text-decoration: none;
+}
+.g-legal-brand span {
+  font-family: var(--font-merriweather), Georgia, serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--g-ink);
+}
+
+.g-legal-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: clamp(28px, 4vh, 44px);
+  padding-top: 18px;
+  border-top: 1px solid var(--g-line);
+}
+.g-legal-foot a {
+  color: var(--g-ink-faint);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.g-legal-foot a:hover {
+  color: var(--g-ink);
+}
+
+@media (max-width: 700px) {
+  .g-legal-back span,
+  .g-legal-brand span {
+    display: none;
+  }
+  .g-legal-brand {
+    justify-content: flex-start;
+  }
+}

@@ -182,7 +182,7 @@ export function SiteNav({ user, canSignIn = true, compact = false, links = true,
             </HoverTip>
           ) : canSignIn ? (
             <HoverTip label="Sign in with Discord to keep your mockups in the cloud" align="end">
-              <a className="g-signin" href="/api/auth/signin?callbackUrl=%2F">
+              <a className="g-signin" href="/signin">
                 <IconBrandDiscord size={16} stroke={1.9} />
                 Sign in
               </a>
@@ -192,10 +192,13 @@ export function SiteNav({ user, canSignIn = true, compact = false, links = true,
               label="Accounts are not set up on this deployment. Everything still saves in this browser."
               align="end"
             >
-              <span className="g-signin" data-inert="true" aria-disabled="true">
+              {/* Still a link, not a dead label: /signin explains why there is
+                  nothing to sign in to on this deployment and what still
+                  works without an account. */}
+              <a className="g-signin" data-inert="true" href="/signin">
                 <IconBrandDiscord size={16} stroke={1.9} />
                 Sign in
-              </span>
+              </a>
             </HoverTip>
           )}
         </div>

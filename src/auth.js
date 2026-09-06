@@ -41,6 +41,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
      a hard-coded one: pinning a host fights Vercel's own domain redirect and
      produces an apex/subdomain loop. */
   trustHost: true,
+  /* Our own pages, not Auth.js's. Its default sign-in screen is a bare box
+     that does not look like this site, and its default error screen prints the
+     reason as an enum name — which tells somebody who is stuck nothing about
+     what to do next. Errors land on the same page so the way forward is always
+     the button right there. */
+  pages: { signIn: "/signin", error: "/signin" },
   providers: [
     Discord({
       clientId: process.env.DISCORD_CLIENT_ID,

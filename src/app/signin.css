@@ -1,0 +1,157 @@
+/* The sign-in page.
+ *
+ * Auth.js ships its own, and it is a bare white-on-black box with a button
+ * and an enum name for an error message. It is the first thing somebody sees
+ * after pressing a button on this site, so it has to look like this site.
+ */
+
+.s-page {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  background: var(--g-ground);
+  background-image: radial-gradient(var(--g-line) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+}
+
+.s-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px var(--g-gutter);
+}
+.s-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border-radius: var(--g-r-pill);
+  color: var(--g-ink-dim);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background var(--g-fast) var(--g-ease-state),
+    color var(--g-fast) var(--g-ease-state);
+}
+.s-back:hover {
+  background: var(--g-fill-2);
+  color: var(--g-ink);
+}
+
+.s-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px var(--g-gutter) 64px;
+}
+
+.s-card {
+  display: flex;
+  width: min(440px, 100%);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: clamp(24px, 4vw, 34px);
+  border: 1px solid var(--mac-hairline, var(--g-line));
+  border-radius: var(--mac-radius, 18px);
+  background: var(--g-sheet-ground);
+  box-shadow: var(--mac-shadow, 0 24px 70px rgba(0, 0, 0, 0.45));
+}
+.s-card h1 {
+  margin: 0;
+  font-family: var(--font-merriweather), Georgia, serif;
+  font-size: clamp(1.35rem, 3vw, 1.7rem);
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.15;
+  color: var(--g-ink);
+}
+.s-card p {
+  margin: 0;
+  color: var(--g-ink-dim);
+  font-size: 14.5px;
+  line-height: 1.62;
+}
+.s-card form {
+  width: 100%;
+}
+
+.s-btn {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 12px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--g-r-inset);
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform var(--g-fast) var(--g-ease-out),
+    filter var(--g-fast) var(--g-ease-state),
+    background var(--g-fast) var(--g-ease-state);
+}
+.s-btn:active {
+  transform: translateY(1px);
+}
+/* Discord's own blurple, because this button goes to Discord and people
+   recognise it faster than they read it. */
+.s-btn-discord {
+  background: #5865f2;
+  color: #fff;
+}
+.s-btn-discord:hover {
+  filter: brightness(1.08);
+}
+.s-btn-solid {
+  background: var(--g-accent);
+  color: var(--g-on-accent);
+}
+.s-btn-solid:hover {
+  filter: brightness(1.06);
+}
+
+.s-error {
+  width: 100%;
+  padding: 10px 12px;
+  border-left: 3px solid var(--g-accent-line);
+  border-radius: 0 var(--g-r-inset) var(--g-r-inset) 0;
+  background: var(--g-accent-soft);
+  color: var(--g-ink) !important;
+  font-size: 13.5px !important;
+}
+
+.s-fine {
+  color: var(--g-ink-faint) !important;
+  font-size: 12.5px !important;
+  line-height: 1.55 !important;
+}
+.s-fine code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--g-fill-2);
+  font-family: var(--font-discord), ui-monospace, Menlo, monospace;
+  font-size: 0.9em;
+  color: var(--g-ink);
+}
+.s-fine a,
+.s-help a {
+  color: var(--g-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.s-help {
+  margin: 0;
+  color: var(--g-ink-faint);
+  font-size: 13px;
+}

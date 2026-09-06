@@ -941,7 +941,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                 <IconZoomOut size={16} />
               </button>
             </Hint>
-            <Hint label="Fit the canvas" keys="⌘scroll to zoom">
+            <Hint label="Reset to fit" keys="⌘/ctrl + scroll">
               <button
                 type="button"
                 className="e-zoom"
@@ -962,6 +962,16 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                 <IconZoomIn size={16} />
               </button>
             </Hint>
+            {/* A tooltip only tells you once you already suspect there is
+                something to find. The shortcut is written next to the control
+                it belongs to, where somebody who has never zoomed a canvas
+                before will read it. */}
+            <span className="e-zoom-hint" aria-hidden="true">
+              <kbd>⌘</kbd>
+              <span>/</span>
+              <kbd>ctrl</kbd>
+              <span>+ scroll to zoom</span>
+            </span>
           </div>
 
           <div

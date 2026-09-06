@@ -313,7 +313,7 @@ export function BackupsPanel({ project, slug, user, canSignIn, onLoad, onError, 
               Sign in with the same Discord account you use for Gator and a copy is kept on the
               deployment — the only one that survives a cleared browser or a different machine.
             </p>
-            <a className="e-btn e-btn-solid" href="/api/auth/signin?callbackUrl=%2F">
+            <a className="e-btn e-btn-solid" href="/signin">
               Sign in with Discord
             </a>
           </div>

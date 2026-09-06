@@ -395,6 +395,68 @@
   height: 64px;
 }
 
+/* ---- what an embed actually looks like on the phone --------------------
+ *
+ * Capping the width was the whole of the mobile treatment, which is not what
+ * the client does. On a phone the embed is a card rather than a column beside
+ * the text: rounder, tighter at the sides, and — because there is no room for
+ * two columns — everything stacks. */
+.dc-mobile .dc-embed {
+  padding: 10px 12px 12px 10px;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+}
+/* The thumbnail cannot sit beside the copy at 393px wide, so it goes under it
+   at full width, which is where the client puts it. */
+.dc-mobile .dc-embed-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.dc-mobile .dc-embed-thumb {
+  grid-column: 1;
+  grid-row: auto;
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+  margin-top: 12px;
+  object-fit: cover;
+}
+.dc-mobile .dc-embed-image {
+  max-width: 100%;
+  margin-top: 12px;
+}
+/* Inline fields are three-up on the desktop. At this width three columns is
+   four words each, so they fall to two — and a field that asked for a third of
+   the row gets half. */
+.dc-mobile .dc-embed-fields {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px 8px;
+}
+/* `!important` because the desktop span is an inline style — it is computed
+   from the run of inline fields a field sits in, which a stylesheet cannot
+   know. This is the one place that has to shout to be heard. */
+.dc-mobile .dc-embed-field {
+  grid-column: span 6 !important;
+}
+.dc-mobile .dc-embed-field[data-inline="true"] {
+  grid-column: span 3 !important;
+}
+
+/* Components v2 containers are the message on a phone, so they run the full
+   width with the client's own padding rather than the desktop's. */
+.dc-mobile .dc-container {
+  padding: 12px;
+  border-radius: 8px;
+}
+.dc-mobile .dc-gallery {
+  max-width: 100%;
+  /* Three across is a postage stamp at this width. */
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+.dc-mobile .dc-separator {
+  margin-block: 10px;
+}
+
 
 /* ------------------------------------------------- narrow window chrome */
 
