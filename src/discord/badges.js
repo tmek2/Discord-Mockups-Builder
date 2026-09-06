@@ -1,12 +1,10 @@
 /* Discord's own profile badges.
  *
- * Extracted from the community icon library as transparent PNGs rather than
- * redrawn: these are recognisable marks, and an approximation of the HypeSquad
+ * Taken from the community icon library rather than redrawn: these are recognisable marks, and an approximation of the HypeSquad
  * crest is worse than no crest at all. Grouped the way the client's profile
  * lists them, so the picker reads in the order somebody expects to find them.
+ * The artwork itself lives in the shared atlas; this file is only the catalogue.
  */
-
-const at = (file) => `/discord/badges/${file}.png`;
 
 export const BADGES = [
   { group: "Staff and programmes", items: [
@@ -57,9 +55,6 @@ export const BADGES = [
 const KNOWN = new Map(BADGES.flatMap((g) => g.items).map((b) => [b.id, b]));
 
 /** The badge, or nothing — an id from an older project must not break a render. */
-export const badge = (id) => {
-  const found = KNOWN.get(id);
-  return found ? { ...found, src: at(found.id) } : null;
-};
+export const badge = (id) => KNOWN.get(id) ?? null;
 
 export const badgeList = () => BADGES;

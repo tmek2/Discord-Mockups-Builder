@@ -9,6 +9,7 @@
  * rather than a flag on the ordinary one.
  */
 
+import { Icon } from "./icon";
 import { Markdown } from "./markdown";
 
 /* The glyph for each kind, and the sentence the client writes. `%s` is the
@@ -17,49 +18,49 @@ import { Markdown } from "./markdown";
 const KINDS = {
   join: {
     tint: "var(--dc-green)",
-    path: "M12 5v14m-7-7h14",
+    icon: "join-arrow",
     before: "",
     after: " joined the party.",
   },
   leave: {
     tint: "var(--dc-red)",
-    path: "M18 6 6 18M6 6l12 12",
+    icon: "leave-arrow",
     before: "",
     after: " left the server.",
   },
   add: {
     tint: "var(--dc-green)",
-    path: "M12 5v14m-7-7h14",
+    icon: "join-arrow",
     before: "",
     after: " added someone to the group.",
   },
   boost: {
     tint: "var(--dc-boost)",
-    path: "m12 3 3 6 6 .9-4.5 4.2 1.1 6.4L12 17.4 6.4 20.5l1.1-6.4L3 9.9 9 9z",
+    icon: "boost",
     before: "",
     after: " just boosted the server!",
   },
   pin: {
     tint: "var(--text-muted)",
-    path: "M15 3 9 9l-4 1 9 9 1-4 6-6zM5 19l4-4",
+    icon: "pins",
     before: "",
     after: " pinned a message to this channel.",
   },
   thread: {
     tint: "var(--text-muted)",
-    path: "M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-4 3V6a2 2 0 0 1 2-2z",
+    icon: "threads",
     before: "",
     after: " started a thread.",
   },
   call: {
     tint: "var(--dc-green)",
-    path: "M6 3h3l2 5-2 1a12 12 0 0 0 6 6l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2z",
+    icon: "call",
     before: "",
     after: " started a call.",
   },
   follow: {
     tint: "var(--text-muted)",
-    path: "M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16M5 19h.01",
+    icon: "megaphone",
     before: "",
     after: " has added a channel to this one.",
   },
@@ -82,7 +83,7 @@ export function SystemMessage({ message, user, selected, onSelect }) {
           ? (event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                onSelect();
+                onSelect(event);
               }
             }
           : undefined
@@ -90,9 +91,7 @@ export function SystemMessage({ message, user, selected, onSelect }) {
       data-id={message.id}
     >
       <span className="dc-system-glyph" style={{ color: kind.tint }} aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d={kind.path} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <Icon name={kind.icon} size={18} />
       </span>
       <span className="dc-system-text">
         {kind.before}

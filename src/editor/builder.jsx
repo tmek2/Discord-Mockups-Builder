@@ -623,6 +623,19 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                 {savedLocally ? "Saved" : "Saving…"}
               </span>
             </Hint>
+            {/* Next to the save state rather than out in the action cluster.
+                Both answer the same question — where is my work kept — and
+                somebody who has just read "Saved" and wants the copies is
+                already looking here. */}
+            <Hint label="Saved copies of this mockup, in this browser and in the cloud">
+              <button
+                type="button"
+                className="e-titlebar-backups"
+                onClick={() => setSheetOpen("backups")}
+              >
+                <IconCloud size={14} /> Backups
+              </button>
+            </Hint>
           </div>
         }
       >
@@ -665,15 +678,6 @@ export function Builder({ user, canSignIn = true, shared = null }) {
               onClick={doShare}
             >
               <IconShare2 size={15} /> Share
-            </button>
-          </Hint>
-          <Hint label="Saved copies of this mockup, in this browser and in the cloud">
-            <button
-              type="button"
-              className="e-btn e-btn-quiet"
-              onClick={() => setSheetOpen("backups")}
-            >
-              <IconCloud size={15} /> Backups
             </button>
           </Hint>
           <Hint label={`Export a PNG at ${project.canvas.scale}×`}>

@@ -71,6 +71,34 @@ spacing and mixed content stay intentionally editable.
   because a bot has to run it. Here a button is a label, a colour and an emoji.
   Nothing in this app sends anything.
 
+## Icons
+
+Every glyph the canvas draws — the composer buttons, the message action bar,
+the channel hashes, the system-message arrows, the profile badges, the status
+dots and the server tags — is Discord's own artwork, from the community
+Ultimate Discord Library PSD supplied with the project. Nothing on the canvas
+is a hand-drawn path or an emoji standing in for an icon: an approximated GIF
+button is exactly the tell that gives a mockup away.
+
+They live in `public/discord/` as PNGs and are drawn through
+`src/discord/icon.jsx`. Monochrome ones are painted with a CSS mask so
+`currentColor` reaches them, which is what lets one file serve the muted state
+of a composer button, the white of a hovered one and the red of a destructive
+menu row. The handful whose colour is the artwork — a ban hammer, a GIF badge,
+the blurple checkbox — are drawn as images instead, and `icon.jsx` keeps the
+list.
+
+Extracting them was not a straight export. Each layer in the PSD is a tile of
+artwork flattened onto a flat `#262732` swatch with a fully opaque alpha
+channel, so a naive read gives 32×32 dark squares that look right only against
+a background of the same colour. The shape lives in the luminance instead, and
+the recovery inverts the composite: the swatch is identified by its known
+colour rather than by frequency (a glyph that runs to the tile edge owns most
+of the border), a monochrome glyph is reconstructed from the single ink of its
+most distant pixel — exact, so solid interiors come back fully opaque and only
+the antialiased rim is fractional — and a multi-coloured badge is treated as
+solid beyond a threshold with the colour un-multiplied back out.
+
 ## Type
 
 Discord's face is gg sans, which is licensed to Discord and cannot be

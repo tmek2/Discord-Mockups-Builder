@@ -90,6 +90,32 @@
   color: var(--g-gator);
 }
 
+/* Reads as part of the save state it sits beside rather than as a fifth
+   toolbar button: no fill until it is pointed at, and the same small type. */
+.e-titlebar-backups {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--g-ink-faint);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+.e-titlebar-backups:hover,
+.e-titlebar-backups:focus-visible {
+  border-color: var(--g-line-strong);
+  background: var(--g-surface-2);
+  color: var(--g-ink);
+}
+
 .e-topbar-actions {
   display: flex;
   align-items: center;
@@ -1030,6 +1056,14 @@
   }
   .e-save {
     display: none;
+  }
+  /* The label goes on a narrow screen; the control does not, because it is
+     the only way to reach the cloud copies. */
+  .e-titlebar-backups span,
+  .e-titlebar-backups {
+    font-size: 0;
+    gap: 0;
+    padding: 6px;
   }
   .e-project-name {
     width: min(16ch, 42vw);

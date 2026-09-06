@@ -10,6 +10,7 @@
  */
 
 import { Emoji } from "./emoji-node";
+import { Icon } from "./icon";
 
 export function Reactions({ reactions = [] }) {
   if (!reactions.length) return null;
@@ -25,10 +26,7 @@ export function Reactions({ reactions = [] }) {
         </span>
       ))}
       <span className="dc-reaction dc-reaction-add" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-          <path d="M9 10h.01M15 10h.01M8.5 14a4.5 4.5 0 0 0 7 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+        <Icon name="add-reaction" size={16} />
       </span>
     </div>
   );

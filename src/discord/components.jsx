@@ -14,6 +14,7 @@
  */
 
 import { Markdown } from "./markdown";
+import { Icon } from "./icon";
 import { Emoji } from "./emoji-node";
 import { FileCard, GalleryGrid } from "./media";
 
@@ -40,15 +41,7 @@ export function Button({ button }) {
       {button.emoji ? <Emoji text={button.emoji} className="dc-btn-emoji" /> : null}
       <span className="dc-btn-label">{button.label || "Button"}</span>
       {button.style === "link" ? (
-        <svg className="dc-btn-out" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4M14 4h6v6M20 4l-9 9"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <Icon name="external" size={16} className="dc-btn-out" />
       ) : null}
     </button>
   );
@@ -67,11 +60,12 @@ function ButtonRow({ block }) {
 /* The four resolved select menus draw a fixed placeholder with an icon rather
  * than a list, because their options come from the server. The string menu is
  * the only one whose options the message carries. */
+/* The glyph the client puts in front of a resolved menu's placeholder. */
 const SELECT_ICON = {
-  user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 20a8 8 0 0 1 16 0",
-  role: "M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7l7-4Z",
-  channel: "M9 4 7 20M17 4l-2 16M4 9h16M3 15h16",
-  mentionable: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 20a8 8 0 0 1 16 0",
+  user: "person",
+  role: "role-shield",
+  channel: "channel-text",
+  mentionable: "person",
 };
 
 function Select({ block }) {
@@ -80,9 +74,7 @@ function Select({ block }) {
     <div className="dc-action-row">
       <div className={`dc-select${block.disabled ? " dc-select-disabled" : ""}`}>
         {resolved ? (
-          <svg className="dc-select-kind" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d={SELECT_ICON[block.kind]} stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+          <Icon name={SELECT_ICON[block.kind] ?? "person"} size={18} className="dc-select-kind" />
         ) : null}
         {/* A menu that takes more than one answer says so instead of showing
             its placeholder — the client replaces the line rather than adding
@@ -92,9 +84,7 @@ function Select({ block }) {
             ? `Select up to ${Math.min(block.maxValues, (block.options ?? []).length || block.maxValues)}`
             : block.placeholder || "Make a selection"}
         </span>
-        <svg className="dc-select-caret" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="m7 10 5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <Icon name="caret-down" size={18} className="dc-select-caret" />
       </div>
     </div>
   );

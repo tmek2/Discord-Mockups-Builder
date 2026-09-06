@@ -1,0 +1,889 @@
+{
+ "height": 528,
+ "tiles": {
+  "badges": {
+   "active-developer-default": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 488,
+    "y": 296
+   },
+   "bug-hunter-tier-1": {
+    "flat": false,
+    "h": 32,
+    "w": 34,
+    "x": 535,
+    "y": 296
+   },
+   "bug-hunter-tier-2": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 8,
+    "y": 344
+   },
+   "clown-for-a-limited-time-default": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 56,
+    "y": 344
+   },
+   "discord-certified-moderator-default": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 104,
+    "y": 344
+   },
+   "discord-default": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 152,
+    "y": 344
+   },
+   "discord-staff-default": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 200,
+    "y": 344
+   },
+   "discord-staff-experimental": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 248,
+    "y": 344
+   },
+   "early-supporter-default": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 296,
+    "y": 344
+   },
+   "early-verified-bot-developer-default": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 344,
+    "y": 344
+   },
+   "hypesquad-balance": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 440,
+    "y": 344
+   },
+   "hypesquad-balance-pride": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 392,
+    "y": 344
+   },
+   "hypesquad-bravery": {
+    "flat": false,
+    "h": 32,
+    "w": 30,
+    "x": 537,
+    "y": 344
+   },
+   "hypesquad-bravery-pride": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 488,
+    "y": 344
+   },
+   "hypesquad-brilliance": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 56,
+    "y": 392
+   },
+   "hypesquad-brilliance-pride": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 8,
+    "y": 392
+   },
+   "hypesquad-events-default": {
+    "flat": false,
+    "h": 32,
+    "w": 34,
+    "x": 103,
+    "y": 392
+   },
+   "new-member": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 152,
+    "y": 392
+   },
+   "nitro-default": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 200,
+    "y": 392
+   },
+   "partner-default": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 248,
+    "y": 392
+   },
+   "redesigned-boost-badge-1-month": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 296,
+    "y": 392
+   },
+   "redesigned-boost-badge-12-months": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 344,
+    "y": 392
+   },
+   "redesigned-boost-badge-15-months": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 392,
+    "y": 392
+   },
+   "redesigned-boost-badge-18-months": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 440,
+    "y": 392
+   },
+   "redesigned-boost-badge-2-months": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 488,
+    "y": 392
+   },
+   "redesigned-boost-badge-24-months": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 536,
+    "y": 392
+   },
+   "redesigned-boost-badge-3-months": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 8,
+    "y": 440
+   },
+   "redesigned-boost-badge-6-months": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 56,
+    "y": 440
+   },
+   "redesigned-boost-badge-9-months": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 104,
+    "y": 440
+   },
+   "server-booster": {
+    "flat": false,
+    "h": 32,
+    "w": 31,
+    "x": 152,
+    "y": 440
+   },
+   "server-owner": {
+    "flat": false,
+    "h": 32,
+    "w": 31,
+    "x": 200,
+    "y": 440
+   },
+   "supports-commands": {
+    "flat": false,
+    "h": 32,
+    "w": 31,
+    "x": 248,
+    "y": 440
+   },
+   "uses-automod": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 296,
+    "y": 440
+   }
+  },
+  "icons": {
+   "activities": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 8,
+    "y": 8
+   },
+   "add-friends": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 56,
+    "y": 8
+   },
+   "add-reaction": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 104,
+    "y": 8
+   },
+   "add-super-reaction": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 152,
+    "y": 8
+   },
+   "apps": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 200,
+    "y": 8
+   },
+   "attach": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 248,
+    "y": 8
+   },
+   "ban": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 296,
+    "y": 8
+   },
+   "boost": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 392,
+    "y": 8
+   },
+   "boost-badge": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 344,
+    "y": 8
+   },
+   "bot": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 440,
+    "y": 8
+   },
+   "call": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 488,
+    "y": 8
+   },
+   "camera": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 536,
+    "y": 8
+   },
+   "caret": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 152,
+    "y": 56
+   },
+   "caret-down": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 8,
+    "y": 56
+   },
+   "caret-right": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 56,
+    "y": 56
+   },
+   "caret-up": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 104,
+    "y": 56
+   },
+   "channel-announcement": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 200,
+    "y": 56
+   },
+   "channel-forum": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 248,
+    "y": 56
+   },
+   "channel-rules": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 296,
+    "y": 56
+   },
+   "channel-text": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 344,
+    "y": 56
+   },
+   "channel-voice": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 392,
+    "y": 56
+   },
+   "check": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 488,
+    "y": 56
+   },
+   "check-circle": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 440,
+    "y": 56
+   },
+   "checked": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 536,
+    "y": 56
+   },
+   "close": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 8,
+    "y": 104
+   },
+   "code": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 56,
+    "y": 104
+   },
+   "configure": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 104,
+    "y": 104
+   },
+   "copy-id": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 152,
+    "y": 104
+   },
+   "copy-link": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 200,
+    "y": 104
+   },
+   "copy-text": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 248,
+    "y": 104
+   },
+   "delete": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 296,
+    "y": 104
+   },
+   "discord": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 344,
+    "y": 104
+   },
+   "download": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 392,
+    "y": 104
+   },
+   "edit": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 440,
+    "y": 104
+   },
+   "emoji": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 536,
+    "y": 104
+   },
+   "emoji-animated": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 488,
+    "y": 104
+   },
+   "exit": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 8,
+    "y": 152
+   },
+   "external": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 56,
+    "y": 152
+   },
+   "file": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 104,
+    "y": 152
+   },
+   "forward": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 152,
+    "y": 152
+   },
+   "gallery": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 200,
+    "y": 152
+   },
+   "gif": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 248,
+    "y": 152
+   },
+   "gift": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 296,
+    "y": 152
+   },
+   "help": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 344,
+    "y": 152
+   },
+   "inbox": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 392,
+    "y": 152
+   },
+   "join-arrow": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 440,
+    "y": 152
+   },
+   "kick": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 488,
+    "y": 152
+   },
+   "leave-arrow": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 536,
+    "y": 152
+   },
+   "leave-server": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 8,
+    "y": 200
+   },
+   "list-add": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 56,
+    "y": 200
+   },
+   "mark-unread": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 104,
+    "y": 200
+   },
+   "megaphone": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 152,
+    "y": 200
+   },
+   "members": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 200,
+    "y": 200
+   },
+   "microphone": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 248,
+    "y": 200
+   },
+   "more": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 440,
+    "y": 200
+   },
+   "more-dots": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 296,
+    "y": 200
+   },
+   "more-overflow": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 344,
+    "y": 200
+   },
+   "more-vertical": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 392,
+    "y": 200
+   },
+   "notifications": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 488,
+    "y": 200
+   },
+   "person": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 8,
+    "y": 248
+   },
+   "person-remove": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 536,
+    "y": 200
+   },
+   "pins": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 56,
+    "y": 248
+   },
+   "play": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 104,
+    "y": 248
+   },
+   "plus": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 152,
+    "y": 248
+   },
+   "poll": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 200,
+    "y": 248
+   },
+   "profile": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 248,
+    "y": 248
+   },
+   "reply": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 296,
+    "y": 248
+   },
+   "report": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 344,
+    "y": 248
+   },
+   "role-icon": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 392,
+    "y": 248
+   },
+   "role-shield": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 440,
+    "y": 248
+   },
+   "search": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 488,
+    "y": 248
+   },
+   "send": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 536,
+    "y": 248
+   },
+   "settings": {
+    "flat": true,
+    "h": 24,
+    "w": 24,
+    "x": 12,
+    "y": 300
+   },
+   "speak": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 56,
+    "y": 296
+   },
+   "sticker": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 104,
+    "y": 296
+   },
+   "super-reaction": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 152,
+    "y": 296
+   },
+   "threads": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 200,
+    "y": 296
+   },
+   "timeout": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 248,
+    "y": 296
+   },
+   "translate": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 296,
+    "y": 296
+   },
+   "unknown-user": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 344,
+    "y": 296
+   },
+   "upload": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 392,
+    "y": 296
+   },
+   "wave": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 440,
+    "y": 296
+   }
+  },
+  "server": {
+   "community-server": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 56,
+    "y": 488
+   },
+   "discoverable-server": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 104,
+    "y": 488
+   },
+   "partnered-server": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 152,
+    "y": 488
+   },
+   "verified-server": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 200,
+    "y": 488
+   }
+  },
+  "status": {
+   "status-dnd": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 344,
+    "y": 440
+   },
+   "status-idle": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 392,
+    "y": 440
+   },
+   "status-mobile": {
+    "flat": false,
+    "h": 41,
+    "w": 32,
+    "x": 440,
+    "y": 435
+   },
+   "status-offline": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 488,
+    "y": 440
+   },
+   "status-online": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 536,
+    "y": 440
+   },
+   "status-streaming": {
+    "flat": false,
+    "h": 32,
+    "w": 32,
+    "x": 8,
+    "y": 488
+   }
+  }
+ },
+ "width": 576
+}

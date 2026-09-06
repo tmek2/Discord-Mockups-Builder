@@ -82,6 +82,16 @@ export default function RootLayout({ children }) {
         {/* Before the first paint and before React, so a visitor who chose
             light never watches a black page correct itself. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        {/* Every glyph on the canvas comes out of one atlas, and the canvas is
+            the first thing painted, so the connection is opened and the file
+            fetched alongside the document rather than after the stylesheet has
+            been parsed and a mask rule has asked for it. */}
+        <link rel="preload" as="image" href="/discord/atlas.png" fetchPriority="high" />
+        {/* Emoji are Twemoji, one SVG each, from a CDN this page has not
+            otherwise talked to. Opening the connection early saves the DNS,
+            TCP and TLS round trips off the first emoji a mockup draws. */}
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
       </head>
       <body>
         {/* One provider for every hover label in the app. Radix needs it above

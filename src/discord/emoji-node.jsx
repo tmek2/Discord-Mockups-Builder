@@ -40,6 +40,10 @@ export function Twemoji({ text, className = "", jumbo = false }) {
       alt={text}
       draggable={false}
       loading="lazy"
+      /* Off the main thread: a message full of emoji is a message full of
+         separate decodes, and synchronous ones block the frame that is drawing
+         the rest of the mockup. */
+      decoding="async"
       onError={() => setFailed(true)}
     />
   );

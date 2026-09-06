@@ -9,6 +9,7 @@
  */
 
 import { Emoji } from "./emoji-node";
+import { Icon } from "./icon";
 import { Markdown } from "./markdown";
 import { safeMedia, safeUrl } from "@/lib/urls";
 
@@ -92,24 +93,14 @@ export function FileCard({ file }) {
   return (
     <div className={`dc-file${file.spoiler ? " dc-media-spoiler" : ""}`}>
       <span className="dc-file-glyph" style={{ color: EXT_TINT[ext] ?? "var(--text-muted)" }}>
-        <svg width="30" height="40" viewBox="0 0 30 40" fill="none" aria-hidden="true">
-          <path d="M2 3a2 2 0 0 1 2-2h13l11 11v25a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z" fill="currentColor" opacity="0.16" />
-          <path
-            d="M2 3a2 2 0 0 1 2-2h13l11 11v25a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zM17 1v11h11"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <Icon name="file" size={40} />
         <span className="dc-file-ext">{ext.slice(0, 4)}</span>
       </span>
       <span className="dc-file-meta">
         <span className="dc-file-name">{file.name || "file"}</span>
         <span className="dc-file-size">{file.size || ""}</span>
       </span>
-      <svg className="dc-file-down" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M12 4v12m0 0 5-5m-5 5-5-5M5 20h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <Icon name="download" size={24} className="dc-file-down" title="Download" />
     </div>
   );
 }
@@ -123,9 +114,7 @@ function AudioCard({ file }) {
       </div>
       <div className="dc-audio-bar">
         <span className="dc-audio-play" aria-hidden="true">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8 5v14l11-7z" />
-          </svg>
+          <Icon name="play" size={18} />
         </span>
         <span className="dc-audio-track">
           <span className="dc-audio-fill" style={{ width: "34%" }} />
@@ -156,9 +145,7 @@ export function VoiceNote({ voice }) {
   return (
     <div className="dc-voice">
       <span className="dc-voice-play" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M8 5v14l11-7z" />
-        </svg>
+        <Icon name="play" size={20} />
       </span>
       <span className="dc-voice-wave" aria-hidden="true">
         {shape.map((h, i) => (

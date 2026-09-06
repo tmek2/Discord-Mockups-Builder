@@ -1705,10 +1705,8 @@
   border-radius: 8px;
   background: var(--background-base-lower);
 }
-.dc-profile-badges img {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
+.dc-profile-badges .dc-icon {
+  flex: none;
 }
 
 .dc-profile-names {
@@ -1789,4 +1787,42 @@
   position: relative;
   display: inline-flex;
   flex: none;
+}
+
+/* ---------------------------------------------------------------- icons */
+
+/* One atlas behind every glyph on the canvas. Naming it once means one image
+   resource for the whole library rather than one per rule. */
+:root {
+  --dc-atlas: url("/discord/atlas.png");
+}
+
+.dc-icon {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  background-repeat: no-repeat;
+}
+
+/* Masked, so a monochrome tile takes the colour of whatever it sits in — the
+   muted grey of a composer button, the white of a hovered one, the red of a
+   destructive menu row — from one asset. */
+.dc-icon-mask {
+  background-color: currentColor;
+  mask-image: var(--dc-atlas);
+  mask-repeat: no-repeat;
+  mask-size: var(--dc-atlas-size);
+  mask-position: var(--dc-atlas-pos);
+  -webkit-mask-image: var(--dc-atlas);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: var(--dc-atlas-size);
+  -webkit-mask-position: var(--dc-atlas-pos);
+}
+
+/* Tiles whose colour is the artwork — a ban hammer, a HypeSquad crest — are
+   painted rather than masked. */
+.dc-icon-art {
+  background-image: var(--dc-atlas);
+  background-size: var(--dc-atlas-size);
+  background-position: var(--dc-atlas-pos);
 }

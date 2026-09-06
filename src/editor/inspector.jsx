@@ -37,6 +37,7 @@ import {
   Text,
   Toggle,
 } from "./fields";
+import { Art } from "@/discord/icon";
 import { badgeList } from "@/discord/badges";
 import { TOOLBAR_ACTIONS } from "@/discord/toolbar";
 import { AvatarPicker } from "./panels";
@@ -860,8 +861,7 @@ function ExtrasTab({ message, patch, project, onError }) {
                                 })
                               }
                             >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={`/discord/badges/${item.id}.png`} alt="" loading="lazy" />
+                              <Art group="badges" name={item.id} size={24} />
                             </button>
                           </Hint>
                         );
@@ -994,7 +994,11 @@ function ExtrasTab({ message, patch, project, onError }) {
               patch({
                 toolbar: {
                   reactions: ["\u2764\ufe0f", "\ud83d\udc80", "\u2705"],
-                  actions: ["add-reaction", "translate", "code", "edit", "forward", "more"],
+                  /* What the client actually draws on your own message:
+                     react, super-react, edit, reply, forward, and the
+                     overflow. Everything else in the set lives behind that
+                     last one, and is here to be added rather than shown. */
+                  actions: ["add-reaction", "super-reaction", "edit", "reply", "forward", "more"],
                 },
               })
             }

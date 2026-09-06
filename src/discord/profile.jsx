@@ -10,6 +10,7 @@
  * message above it.
  */
 
+import { Art } from "./icon";
 import { badge } from "./badges";
 import { Markdown } from "./markdown";
 
@@ -30,8 +31,8 @@ export function ProfileCard({ profile, user }) {
       />
 
       <div className="dc-profile-avatar-slot">
-        <img className="dc-profile-avatar" src={user.avatar} alt="" draggable={false} />
-        {user.decoration ? <img className="dc-profile-decoration" src={user.decoration} alt="" /> : null}
+        <img className="dc-profile-avatar" src={user.avatar} alt="" draggable={false} decoding="async" />
+        {user.decoration ? <img className="dc-profile-decoration" src={user.decoration} alt="" decoding="async" /> : null}
         <span className={`dc-presence dc-presence-${user.status || "online"} dc-profile-presence`} />
       </div>
 
@@ -41,7 +42,7 @@ export function ProfileCard({ profile, user }) {
         {badges.length ? (
           <div className="dc-profile-badges">
             {badges.map((b) => (
-              <img key={b.id} src={b.src} alt={b.label} title={b.label} />
+              <Art key={b.id} group="badges" name={b.id} size={22} title={b.label} />
             ))}
           </div>
         ) : null}

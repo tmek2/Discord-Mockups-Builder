@@ -17,8 +17,9 @@
  * second layout, and it is drawn as one.
  */
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { RenderContext } from "./context";
+import { Icon } from "./icon";
 import { Message } from "./message";
 import { DateDivider, NewDivider } from "./system";
 import "./tokens.css";
@@ -32,9 +33,7 @@ function ServerRail({ canvas }) {
   return (
     <nav className="dc-rail" aria-hidden="true">
       <span className="dc-rail-home">
-        <svg width="26" height="20" viewBox="0 0 24 18" fill="currentColor">
-          <path d="M20 1.5A17 17 0 0 0 15.7.2l-.5 1a15 15 0 0 0-6.4 0l-.5-1A17 17 0 0 0 4 1.5C1.3 5.5.6 9.4.9 13.2A17 17 0 0 0 6.1 15.8l1-1.6a11 11 0 0 1-1.8-.8l.5-.4a12 12 0 0 0 10.4 0l.5.4a11 11 0 0 1-1.8.9l1 1.6a17 17 0 0 0 5.2-2.6c.4-4.4-.7-8.3-2.9-11.8ZM8.3 10.9c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.9 2.1-1.9 2.1Zm7.4 0c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.9 2.1-1.9 2.1Z" />
-        </svg>
+        <Icon name="discord" size={26} />
       </span>
       <span className="dc-rail-rule" />
       <span className="dc-rail-server dc-rail-active">
@@ -58,15 +57,13 @@ function ChannelList({ canvas }) {
     <aside className="dc-sidebar" aria-hidden="true">
       <header className="dc-sidebar-head">
         {canvas.server?.name || "Community"}
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="m7 10 5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <Icon name="caret-down" size={18} />
       </header>
       <div className="dc-sidebar-body">
         <div className="dc-sidebar-category">{canvas.channel?.category || "TEXT CHANNELS"}</div>
         {channels.map((name) => (
           <div className={`dc-sidebar-channel${name === canvas.channel?.name ? " dc-sidebar-on" : ""}`} key={name}>
-            <span className="dc-hash">#</span>
+            <Icon name="channel-text" size={20} className="dc-hash" />
             {name}
           </div>
         ))}
@@ -79,26 +76,22 @@ function ChannelHeader({ canvas, mobile }) {
   if (mobile) {
     return (
       <header className="dc-m-head" aria-hidden="true">
-        <svg className="dc-m-back" width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="m14 6-6 6 6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <span className="dc-hash">#</span>
+        <Icon name="caret" size={22} className="dc-m-back" />
+        <Icon name="channel-text" size={20} className="dc-hash" />
         <span className="dc-m-head-name">{canvas.channel?.name || "general"}</span>
         <span className="dc-m-head-tools">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M6 3h3l2 5-2 1a12 12 0 0 0 6 6l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-          </svg>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-            <path d="m20 20-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+          {/* A text channel's header has threads, pins and search. The call
+              button belongs to a DM and a voice channel, not to this. */}
+          <Icon name="threads" size={20} />
+          <Icon name="pins" size={20} />
+          <Icon name="members" size={20} />
         </span>
       </header>
     );
   }
   return (
     <header className="dc-head" aria-hidden="true">
-      <span className="dc-hash">#</span>
+      <Icon name="channel-text" size={20} className="dc-hash" />
       <span className="dc-head-name">{canvas.channel?.name || "general"}</span>
       {canvas.channel?.topic ? (
         <>
@@ -146,22 +139,29 @@ function MemberList({ canvas, users }) {
 function Composer({ canvas, mobile }) {
   return (
     <div className={mobile ? "dc-m-composer" : "dc-composer"} aria-hidden="true">
-      {mobile ? null : <span className="dc-composer-plus">+</span>}
+      {/* The client's own controls, in its own order. The plus was a typed "+"
+          and the gift was the 🎁 emoji, which is the sort of thing that gives
+          a screenshot away at a glance. */}
+      <Icon name="attach" size={22} className="dc-composer-plus" />
       <span className="dc-composer-text">Message #{canvas.channel?.name || "general"}</span>
       <span className="dc-composer-tools">
+        {/* The phone does not get the desktop's row shrunk down. It has its
+            own set — emoji, then the camera, the gallery and the microphone,
+            which are the three things a phone can offer that a desktop
+            cannot. */}
         {mobile ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-            <path d="M9 10h.01M15 10h.01M8.5 14a4.5 4.5 0 0 0 7 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+          <>
+            <Icon name="emoji" size={20} />
+            <Icon name="camera" size={20} />
+            <Icon name="gallery" size={20} />
+            <Icon name="microphone" size={20} />
+          </>
         ) : (
           <>
-            <span className="dc-composer-gift">🎁</span>
-            <span className="dc-composer-gif">GIF</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-              <path d="M9 10h.01M15 10h.01M8.5 14a4.5 4.5 0 0 0 7 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <Icon name="gift" size={20} />
+            <Icon name="gif" size={20} />
+            <Icon name="sticker" size={20} />
+            <Icon name="emoji" size={20} />
           </>
         )}
       </span>
@@ -192,10 +192,34 @@ export function DiscordSurface({ project, selectedId, onSelect, innerRef }) {
 
   /* Context rather than props: a mention can appear at any depth of a
      container tree, and threading the user list through every renderer to
-     reach it is how a component ends up with eleven props it does not use. */
+     reach it is how a component ends up with eleven props it does not use.
+     The message list is deliberately not in here. It changes on every
+     keystroke, and a context that changes re-renders every consumer of it —
+     which would have meant re-parsing forty markdown trees per typed
+     character. The one thing that needed it was resolving a reply, and the
+     stream can do that once on the way past. */
   const ctx = useMemo(
-    () => ({ users: project.users ?? [], emojis: project.emojis ?? [], messages: project.messages ?? [] }),
-    [project.users, project.emojis, project.messages],
+    () => ({ users: project.users ?? [], emojis: project.emojis ?? [] }),
+    [project.users, project.emojis],
+  );
+
+  /* One handler for the whole stream, reading the id off the row it fired on.
+     A closure per message would be a new prop on every message on every
+     keystroke, which is the thing that stops `Message` being memoisable — and
+     a mockup with forty messages re-rendering forty markdown trees per typed
+     character is the difference between a smooth field and a laggy one. */
+  const pick = useCallback(
+    (event) => {
+      if (!onSelect) return;
+      const row = event.currentTarget.dataset.id;
+      if (row) onSelect(row);
+    },
+    [onSelect],
+  );
+
+  const byId = useMemo(
+    () => new Map((project.messages ?? []).map((m) => [m.id, m])),
+    [project.messages],
   );
 
   const stream = (
@@ -206,8 +230,9 @@ export function DiscordSurface({ project, selectedId, onSelect, innerRef }) {
           {canvas.showNewDivider && i === (project.messages.length - 1) ? <NewDivider /> : null}
           <Message
             message={message}
+            replyTo={message.reply ? byId.get(message.reply) : undefined}
             selected={selectedId === message.id}
-            onSelect={onSelect ? () => onSelect(message.id) : undefined}
+            onSelect={onSelect ? pick : undefined}
           />
         </div>
       ))}

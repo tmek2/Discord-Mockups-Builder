@@ -777,8 +777,6 @@ textarea.e-control {
   background: var(--g-accent-soft);
   opacity: 1;
 }
-.e-badge img {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
+.e-badge .dc-icon {
+  flex: none;
 }

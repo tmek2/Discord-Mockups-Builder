@@ -19,6 +19,13 @@ const nextConfig = {
         headers: [{ key: "cache-control", value: "public, max-age=31536000, immutable" }],
       },
       {
+        /* The icon atlas is the same 44KB for every mockup anybody ever opens,
+           and it is regenerated under a build step rather than edited, so it
+           is cached for as long as the avatars are. */
+        source: "/discord/:file*",
+        headers: [{ key: "cache-control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
         source: "/favicon.:ext(svg|ico)",
         headers: [{ key: "cache-control", value: "public, max-age=604800" }],
       },

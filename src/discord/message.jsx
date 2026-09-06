@@ -13,13 +13,14 @@
  * hard to name and impossible to unsee.
  */
 
-import { useContext } from "react";
+import { memo, useContext } from "react";
 import { Markdown } from "./markdown";
 import { RenderContext } from "./context";
 import { Embed } from "./embed";
 import { Blocks } from "./components";
 import { Attachments, Invite, LinkPreview, Poll, Sticker, VoiceNote } from "./media";
 import { Reactions } from "./reactions";
+import { Icon } from "./icon";
 import { HoverToolbar } from "./toolbar";
 import { ProfileCard } from "./profile";
 import { SystemMessage } from "./system";
@@ -27,12 +28,7 @@ import { SystemMessage } from "./system";
 /** The check inside the APP tag on a verified application. */
 function VerifiedMark() {
   return (
-    <svg className="dc-badge-check" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M7.4 11.17 4.6 8.38l1.06-1.06 1.74 1.73 3.94-3.94 1.06 1.07z"
-      />
-    </svg>
+<Icon name="check" size={12} className="dc-badge-check" />
   );
 }
 
@@ -106,15 +102,7 @@ function ForwardCard({ forwarded }) {
   return (
     <div className="dc-forward">
       <div className="dc-forward-head">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M14 5l7 7-7 7M21 12H8a5 5 0 0 0-5 5v2"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <Icon name="reply" size={12} className="dc-forward-icon" />
         Forwarded
       </div>
       <div className="dc-forward-body">
@@ -129,14 +117,7 @@ function ThreadTag({ thread }) {
   if (!thread) return null;
   return (
     <div className="dc-thread-tag">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path
-          d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-4 3V6a2 2 0 0 1 2-2z"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <Icon name="threads" size={16} />
       <span className="dc-thread-name">{thread.name || "Thread"}</span>
       <span className="dc-thread-count">
         {thread.count ?? 0} {thread.count === 1 ? "message" : "messages"}
@@ -146,16 +127,15 @@ function ThreadTag({ thread }) {
   );
 }
 
-export function Message({ message, selected, onSelect }) {
-  const ctx = useContext(RenderContext);
-  const { users, messages } = ctx;
+function MessageRow({ message, replyTo, selected, onSelect }) {
+  const { users } = useContext(RenderContext);
   const user = users.find((u) => u.id === message.user) ?? users[0];
 
   if (message.kind === "system") {
     return <SystemMessage message={message} user={user} selected={selected} onSelect={onSelect} />;
   }
 
-  const target = message.reply ? messages?.find((m) => m.id === message.reply) : null;
+  const target = message.reply ? replyTo : null;
   /* A grouped message loses its avatar and its author line, but never its
      reply line or its command header: both of those force it out of the
      group in the client, so a grouped message that has one is drawn full. */
@@ -178,7 +158,7 @@ export function Message({ message, selected, onSelect }) {
           ? (event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                onSelect();
+                onSelect(event);
               }
             }
           : undefined
@@ -247,10 +227,7 @@ export function Message({ message, selected, onSelect }) {
 
         {message.ephemeral ? (
           <div className="dc-only-you">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-              <path d="M12 8h.01M11 12h1v4h1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <Icon name="help" size={16} />
             Only you can see this ·{" "}
             <span className="dc-only-you-dismiss">Dismiss message</span>
           </div>
@@ -259,3 +236,10 @@ export function Message({ message, selected, onSelect }) {
     </article>
   );
 }
+
+/* Memoised on purpose. Every message on the canvas re-rendered on every
+   keystroke before this, because each one was handed a fresh click closure and
+   a context that carried the whole message list. Neither is true now, so a row
+   whose own data has not changed does no work — which is what makes a mockup
+   with forty messages type as smoothly as one with two. */
+export const Message = memo(MessageRow);
