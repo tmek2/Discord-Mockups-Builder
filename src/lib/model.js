@@ -16,6 +16,15 @@ export const PROJECT_VERSION = 2;
    so an id says what it is, time-ordered so a list sorts by creation, and its
    random half comes from the CSPRNG rather than `Math.random`, which some
    engines seed predictably enough to enumerate. */
+/* A phone is a phone, not a narrow desktop.
+ *
+ * 393 x 852 is the iPhone 15/16 viewport in CSS pixels, and the ratio between
+ * them is what makes a screenshot read as a phone. The canvas width slider
+ * used to apply here too, so "Phone" only ever made the same canvas taller —
+ * which is exactly what it looked like. */
+export const PHONE_WIDTH = 393;
+export const PHONE_HEIGHT = 852;
+
 export const uid = () => newId("id");
 export { ID };
 

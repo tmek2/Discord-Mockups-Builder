@@ -69,10 +69,14 @@ function AuthorRow({ message, patch, project, commit, onManageMembers, onError }
   const author = project.users.find((u) => u.id === message.user);
 
   const patchAuthor = (fields) =>
-    commit((p) => ({
-      ...p,
-      users: p.users.map((u) => (u.id === message.user ? { ...u, ...fields } : u)),
-    }));
+    commit(
+      (p) => ({
+        ...p,
+        users: p.users.map((u) => (u.id === message.user ? { ...u, ...fields } : u)),
+      }),
+      // Typing a name is one undo step; so is dragging through the spectrum.
+      `user:${message.user}:${Object.keys(fields).sort().join(",")}`,
+    );
 
   return (
     <div className="e-author">

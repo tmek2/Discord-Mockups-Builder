@@ -44,7 +44,8 @@ import Link from "next/link";
 import { SiteNav } from "@/gator/site-nav";
 import { Blob, useBlob } from "@/gator/blob";
 import { DiscordSurface } from "@/discord/surface";
-import { blankProject, newMessage, reid, uid } from "@/lib/model";
+import { PHONE_WIDTH, blankProject, newMessage, reid, uid } from "@/lib/model";
+import { nextStamp, restamp } from "@/lib/clock";
 import { TEMPLATES } from "@/lib/templates";
 import { SUPPORT_URL } from "@/lib/site";
 import { loadValue, saveValue } from "@/lib/storage";
@@ -53,7 +54,14 @@ import { Hint } from "./fields";
 import { Inspector, TABS } from "./inspector";
 import { CanvasPanel, EmojiPanel, UsersPanel } from "./panels";
 import { BackupsPanel } from "./backups-panel";
-import { exportMessageJson, exportPng, exportProject, messageJson, readShareLink, shareLink } from "./export";
+import {
+  exportMessageJson,
+  exportPng,
+  exportProject,
+  messageJson,
+  readShareLink,
+  shareLink,
+} from "./export";
 import { AUTO_EVERY_MS, takeSnapshot } from "@/lib/backups";
 import { forkProject } from "@/lib/fork";
 import { ID } from "@/lib/ids";
@@ -62,7 +70,6 @@ import { useCanvasGestures } from "./use-canvas";
 import { Sheet } from "./sheet";
 import { useReorder } from "./use-reorder";
 import "./editor.css";
-
 
 /* A hover label, with the shortcut where there is one. Every control that is
    an icon alone needs one — an icon is a guess until something names it — and
@@ -99,8 +106,14 @@ export function Builder({ user, canSignIn = true, shared = null }) {
   const outline = useRef(null);
   const [room, setRoom] = useState(0);
 
-  const notify = useCallback((text, tone = "ok") => setToast({ text, tone, key: uid() }), []);
-  const fail = useCallback((text) => setToast({ text, tone: "bad", key: uid() }), []);
+  const notify = useCallback(
+    (text, tone = "ok") => setToast({ text, tone, key: uid() }),
+    [],
+  );
+  const fail = useCallback(
+    (text) => setToast({ text, tone: "bad", key: uid() }),
+    [],
+  );
 
   /* ------------------------------------------------------------ loading */
 
@@ -124,8 +137,11 @@ export function Builder({ user, canSignIn = true, shared = null }) {
       setProject(forkProject(migrate(incoming)));
       setSlug(ID.mockup());
       setLoaded(true);
-      notify("Opened a shared mockup. This is your own copy — edits here reach nobody else.");
-      if (!shared) window.history.replaceState(null, "", window.location.pathname);
+      notify(
+        "Opened a shared mockup. This is your own copy — edits here reach nobody else.",
+      );
+      if (!shared)
+        window.history.replaceState(null, "", window.location.pathname);
       return () => {
         alive = false;
       };
@@ -141,7 +157,10 @@ export function Builder({ user, canSignIn = true, shared = null }) {
         }
       })
       .catch(() => {
-        if (alive) fail("This browser is not letting the editor save. Download the project file to keep your work.");
+        if (alive)
+          fail(
+            "This browser is not letting the editor save. Download the project file to keep your work.",
+          );
       })
       .finally(() => alive && setLoaded(true));
 
@@ -158,7 +177,11 @@ export function Builder({ user, canSignIn = true, shared = null }) {
     const timer = window.setTimeout(() => {
       Promise.all([saveValue(STORE_KEY, project), saveValue(SLUG_KEY, slug)])
         .then(() => setSavedLocally(true))
-        .catch(() => fail("Browser storage is full. Download the project file to keep your changes."));
+        .catch(() =>
+          fail(
+            "Browser storage is full. Download the project file to keep your changes.",
+          ),
+        );
     }, 500);
     return () => window.clearTimeout(timer);
   }, [project, slug, loaded, fail]);
@@ -201,13 +224,66 @@ export function Builder({ user, canSignIn = true, shared = null }) {
     return () => watch.disconnect();
   }, []);
 
+  /* Put the mockup in the middle of the stage's slack.
+   *
+   * The stage carries a viewport's worth of empty room on every side so that
+   * dragging it always does something — an editor canvas that only moves when
+   * its content happens to overflow is an editor canvas that feels broken. But
+   * a scroll container starts at its top-left corner, which with that much
+   * slack is a screenful of nothing. So the first paint scrolls to the middle.
+   *
+   * Once only: after that the position is the reader's, and re-centring under
+   * them every time the mockup grows a line would fight the drag they just
+   * made. */
+  const centred = useRef(false);
+  useEffect(() => {
+    const node = scroller.current;
+    if (!node || centred.current || !loaded) return;
+    const centre = () => {
+      if (node.scrollWidth <= node.clientWidth) return false;
+      node.scrollLeft = (node.scrollWidth - node.clientWidth) / 2;
+      node.scrollTop = (node.scrollHeight - node.clientHeight) / 2;
+      centred.current = true;
+      return true;
+    };
+    // A frame later, so the plate has been laid out and measured.
+    const id = requestAnimationFrame(() => {
+      if (!centre()) requestAnimationFrame(centre);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [loaded]);
+
   /* -------------------------------------------------------------- state */
 
+  /* The last thing that was edited, and when.
+   *
+   * Dragging a width slider from 100 to 300 fires a commit per pixel, and
+   * every one of them was pushing an undo entry — so getting back to 100 meant
+   * two hundred presses of ctrl+Z. A continuous edit is one thing that
+   * happened, so consecutive commits carrying the same `tag` inside a short
+   * window replace the previous entry rather than stacking on it.
+   *
+   * Untagged commits never merge: adding a message, applying JSON, restoring a
+   * backup are all discrete and must each be undoable on their own. */
+  const lastEdit = useRef({ tag: null, at: 0 });
+  const MERGE_MS = 700;
+
   const commit = useCallback(
-    (next) => {
-      setPast((p) => [...p.slice(-49), project]);
+    (next, tag = null) => {
+      const now = Date.now();
+      const previous = lastEdit.current;
+      const merge =
+        tag !== null && previous.tag === tag && now - previous.at < MERGE_MS;
+      lastEdit.current = { tag, at: now };
+
+      /* The history keeps the state from *before* the run started, so the
+         whole drag undoes in one press rather than to its second-to-last
+         value. */
+      if (!merge) setPast((p) => [...p.slice(-49), project]);
       setFuture([]);
-      setProject((current) => (typeof next === "function" ? next(current) : next));
+      setProject((current) =>
+        typeof next === "function" ? next(current) : next,
+      );
     },
     [project],
   );
@@ -231,34 +307,63 @@ export function Builder({ user, canSignIn = true, shared = null }) {
   }, [project]);
 
   const message = useMemo(
-    () => project.messages.find((m) => m.id === selected) ?? project.messages[0] ?? null,
+    () =>
+      project.messages.find((m) => m.id === selected) ??
+      project.messages[0] ??
+      null,
     [project.messages, selected],
   );
 
   const patchMessage = useCallback(
     (over) => {
       if (!message) return;
-      commit((p) => ({ ...p, messages: p.messages.map((m) => (m.id === message.id ? { ...m, ...over } : m)) }));
+      /* Tagged by which fields of which message are changing, so typing into
+         one box is one undo step and moving to the next box starts another. */
+      const tag = `m:${message.id}:${Object.keys(over).sort().join(",")}`;
+      commit(
+        (p) => ({
+          ...p,
+          messages: p.messages.map((m) =>
+            m.id === message.id ? { ...m, ...over } : m,
+          ),
+        }),
+        tag,
+      );
     },
     [commit, message],
   );
 
   const addMessage = useCallback(() => {
     const author = message?.user ?? project.users[0].id;
-    const next = newMessage(author, { content: "New message", timestamp: message?.timestamp ?? "Today at 10:03" });
+    /* The clock moves the way a conversation does: a few messages inside one
+       minute, then the next. Every message stamped identically is the thing
+       that gives a mockup away, and a minute per message is just as wrong in
+       the other direction. */
+    const next = newMessage(author, {
+      content: "New message",
+      timestamp:
+        nextStamp(project.messages) ?? message?.timestamp ?? "Today at 10:00",
+    });
     commit((p) => ({ ...p, messages: [...p.messages, next] }));
     setSelected(next.id);
     setSheetOpen(null);
     setTab("Content");
     setPane("inspector");
-  }, [commit, message, project.users]);
+  }, [commit, message, project.messages, project.users]);
 
   const duplicateMessage = useCallback(() => {
     if (!message) return;
     const copy = reid(message);
     copy.reply = "";
     const i = project.messages.findIndex((m) => m.id === message.id);
-    commit((p) => ({ ...p, messages: [...p.messages.slice(0, i + 1), copy, ...p.messages.slice(i + 1)] }));
+    commit((p) => ({
+      ...p,
+      messages: [
+        ...p.messages.slice(0, i + 1),
+        copy,
+        ...p.messages.slice(i + 1),
+      ],
+    }));
     setSelected(copy.id);
   }, [commit, message, project.messages]);
 
@@ -272,7 +377,9 @@ export function Builder({ user, canSignIn = true, shared = null }) {
     commit((p) => ({
       ...p,
       // A reply pointing at a message that has gone would draw an empty spine.
-      messages: p.messages.filter((m) => m.id !== id).map((m) => (m.reply === id ? { ...m, reply: "" } : m)),
+      messages: p.messages
+        .filter((m) => m.id !== id)
+        .map((m) => (m.reply === id ? { ...m, reply: "" } : m)),
     }));
     setSelected(rest[0]?.id ?? null);
   }, [commit, fail, message, project.messages]);
@@ -350,7 +457,9 @@ export function Builder({ user, canSignIn = true, shared = null }) {
       await exportPng(stage.current, project);
       notify("PNG exported.");
     } catch {
-      fail("The export failed. An image linked from another site can block it — upload it instead.");
+      fail(
+        "The export failed. An image linked from another site can block it — upload it instead.",
+      );
     } finally {
       setExporting(false);
     }
@@ -405,13 +514,21 @@ export function Builder({ user, canSignIn = true, shared = null }) {
 
   /* ---------------------------------------------------------- gestures */
 
-  const { dragging, zoomShown, handlers: canvasHandlers } = useCanvasGestures({
+  const {
+    dragging,
+    zoomShown,
+    handlers: canvasHandlers,
+  } = useCanvasGestures({
     scrollerRef: scroller,
     zoom,
     setZoom,
   });
 
-  const fit = room > 0 ? Math.min(1, room / project.canvas.width) : 1;
+  const phone = project.canvas.platform === "mobile";
+  const fit =
+    room > 0
+      ? Math.min(1, room / (phone ? PHONE_WIDTH : project.canvas.width))
+      : 1;
   const shown = zoomShown * fit;
 
   const rows = useReorder({ count: project.messages.length, onMove: reorder });
@@ -424,7 +541,9 @@ export function Builder({ user, canSignIn = true, shared = null }) {
 
   useEffect(() => {
     const onKey = (event) => {
-      const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
+      const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(
+        document.activeElement?.tagName,
+      );
       const mod = event.metaKey || event.ctrlKey;
 
       if (mod && event.key.toLowerCase() === "k") {
@@ -459,7 +578,6 @@ export function Builder({ user, canSignIn = true, shared = null }) {
 
   /* ------------------------------------------------------------- render */
 
-
   return (
     <div className="e-app">
       <SiteNav
@@ -475,7 +593,9 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                 className="e-project-name"
                 aria-label="Mockup name"
                 value={project.name}
-                onChange={(e) => commit((p) => ({ ...p, name: e.target.value }))}
+                onChange={(e) =>
+                  commit((p) => ({ ...p, name: e.target.value }))
+                }
               />
             </Hint>
             <Hint
@@ -485,8 +605,15 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                   : "Writing to this browser"
               }
             >
-              <span className="e-save" data-saved={savedLocally ? "true" : "false"}>
-                {savedLocally ? <IconCheck size={13} /> : <IconDeviceFloppy size={13} />}
+              <span
+                className="e-save"
+                data-saved={savedLocally ? "true" : "false"}
+              >
+                {savedLocally ? (
+                  <IconCheck size={13} />
+                ) : (
+                  <IconDeviceFloppy size={13} />
+                )}
                 {savedLocally ? "Saved" : "Saving…"}
               </span>
             </Hint>
@@ -495,32 +622,61 @@ export function Builder({ user, canSignIn = true, shared = null }) {
       >
         <div className="e-topbar-actions e-no-export">
           <Hint label="Undo" keys="⌘Z">
-            <button type="button" className="e-icon-btn" onClick={undo} disabled={!past.length} aria-label="Undo">
+            <button
+              type="button"
+              className="e-icon-btn"
+              onClick={undo}
+              disabled={!past.length}
+              aria-label="Undo"
+            >
               <IconArrowBackUp size={16} />
             </button>
           </Hint>
           <Hint label="Redo" keys="⇧⌘Z">
-            <button type="button" className="e-icon-btn" onClick={redo} disabled={!future.length} aria-label="Redo">
+            <button
+              type="button"
+              className="e-icon-btn"
+              onClick={redo}
+              disabled={!future.length}
+              aria-label="Redo"
+            >
               <IconArrowForwardUp size={16} />
             </button>
           </Hint>
           <Hint label="Start from a template">
-            <button type="button" className="e-btn e-btn-quiet" onClick={() => setSheetOpen("templates")}>
+            <button
+              type="button"
+              className="e-btn e-btn-quiet"
+              onClick={() => setSheetOpen("templates")}
+            >
               <IconStack2 size={15} /> Templates
             </button>
           </Hint>
           <Hint label="Copy a link that carries the whole mockup">
-            <button type="button" className="e-btn e-btn-quiet" onClick={doShare}>
+            <button
+              type="button"
+              className="e-btn e-btn-quiet"
+              onClick={doShare}
+            >
               <IconShare2 size={15} /> Share
             </button>
           </Hint>
           <Hint label="Saved copies of this mockup, in this browser and in the cloud">
-            <button type="button" className="e-btn e-btn-quiet" onClick={() => setSheetOpen("backups")}>
+            <button
+              type="button"
+              className="e-btn e-btn-quiet"
+              onClick={() => setSheetOpen("backups")}
+            >
               <IconCloud size={15} /> Backups
             </button>
           </Hint>
           <Hint label={`Export a PNG at ${project.canvas.scale}×`}>
-            <button type="button" className="e-btn e-btn-solid" onClick={doExportPng} disabled={exporting}>
+            <button
+              type="button"
+              className="e-btn e-btn-solid"
+              onClick={doExportPng}
+              disabled={exporting}
+            >
               <IconPhotoDown size={15} /> {exporting ? "Exporting…" : "PNG"}
             </button>
           </Hint>
@@ -548,7 +704,9 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                     m.kind === "system"
                       ? `${m.systemType ?? "system"} notice`
                       : m.content?.split("\n")[0].slice(0, 46) ||
-                        (m.embeds?.length ? `${m.embeds.length} embed${m.embeds.length > 1 ? "s" : ""}` : "") ||
+                        (m.embeds?.length
+                          ? `${m.embeds.length} embed${m.embeds.length > 1 ? "s" : ""}`
+                          : "") ||
                         (m.components?.length ? "Components" : "") ||
                         "Empty message";
                   const held = rows.drag?.index === i && rows.drag.held;
@@ -601,9 +759,16 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                           <IconGripVertical size={14} />
                         </span>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img className="e-outline-face" src={author?.avatar} alt="" draggable={false} />
+                        <img
+                          className="e-outline-face"
+                          src={author?.avatar}
+                          alt=""
+                          draggable={false}
+                        />
                         <span className="e-outline-copy">
-                          <span className="e-outline-name">{author?.name ?? "Unknown"}</span>
+                          <span className="e-outline-name">
+                            {author?.name ?? "Unknown"}
+                          </span>
                           <span className="e-outline-text">{summary}</span>
                         </span>
                         <span className="e-outline-index">{i + 1}</span>
@@ -615,32 +780,60 @@ export function Builder({ user, canSignIn = true, shared = null }) {
 
               <div className="e-outline-actions">
                 <Hint label="Add another message to the mockup" keys="⌘↵">
-                  <button type="button" className="e-btn e-btn-dashed" onClick={addMessage}>
+                  <button
+                    type="button"
+                    className="e-btn e-btn-dashed"
+                    onClick={addMessage}
+                  >
                     <IconPlus size={15} /> Add a message
                   </button>
                 </Hint>
                 {/* Four bare glyphs at the foot of a column do not say what
                     they act on, and one of them deletes something. Naming the
                     row costs a line and answers it. */}
-                <div className="e-outline-tools" role="group" aria-label="Selected message">
+                <div
+                  className="e-outline-tools"
+                  role="group"
+                  aria-label="Selected message"
+                >
                   <span className="e-outline-tools-label">Selected</span>
                   <Hint label="Move up">
-                    <button type="button" className="e-icon-btn" onClick={() => moveMessage(-1)} aria-label="Move up">
+                    <button
+                      type="button"
+                      className="e-icon-btn"
+                      onClick={() => moveMessage(-1)}
+                      aria-label="Move up"
+                    >
                       <IconArrowUp size={15} />
                     </button>
                   </Hint>
                   <Hint label="Move down">
-                    <button type="button" className="e-icon-btn" onClick={() => moveMessage(1)} aria-label="Move down">
+                    <button
+                      type="button"
+                      className="e-icon-btn"
+                      onClick={() => moveMessage(1)}
+                      aria-label="Move down"
+                    >
                       <IconArrowDown size={15} />
                     </button>
                   </Hint>
                   <Hint label="Duplicate" keys="⌘D">
-                    <button type="button" className="e-icon-btn" onClick={duplicateMessage} aria-label="Duplicate">
+                    <button
+                      type="button"
+                      className="e-icon-btn"
+                      onClick={duplicateMessage}
+                      aria-label="Duplicate"
+                    >
                       <IconCopy size={15} />
                     </button>
                   </Hint>
                   <Hint label="Delete this message">
-                    <button type="button" className="e-icon-btn" onClick={removeMessage} aria-label="Delete">
+                    <button
+                      type="button"
+                      className="e-icon-btn"
+                      onClick={removeMessage}
+                      aria-label="Delete"
+                    >
                       <IconTrash size={15} />
                     </button>
                   </Hint>
@@ -655,23 +848,50 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                 phone this pane is where they live instead — drawn only at the
                 widths where the header is not showing them. */}
             <div className="e-left-narrow">
-              <button type="button" className="e-btn e-btn-quiet" onClick={() => setSheetOpen("templates")}>
+              <button
+                type="button"
+                className="e-btn e-btn-quiet"
+                onClick={() => setSheetOpen("templates")}
+              >
                 <IconStack2 size={15} /> Templates
               </button>
-              <button type="button" className="e-btn e-btn-quiet" onClick={doShare}>
+              <button
+                type="button"
+                className="e-btn e-btn-quiet"
+                onClick={doShare}
+              >
                 <IconShare2 size={15} /> Share a link
               </button>
-              <button type="button" className="e-btn e-btn-quiet" onClick={() => setPaletteOpen(true)}>
+              <button
+                type="button"
+                className="e-btn e-btn-quiet"
+                onClick={() => setPaletteOpen(true)}
+              >
                 <IconSettings size={15} /> All commands
               </button>
             </div>
-            <button type="button" className="e-btn e-btn-quiet" onClick={() => importer.current?.click()}>
-              <IconDownload size={15} style={{ transform: "rotate(180deg)" }} /> Import a project
+            <button
+              type="button"
+              className="e-btn e-btn-quiet"
+              onClick={() => importer.current?.click()}
+            >
+              <IconDownload size={15} style={{ transform: "rotate(180deg)" }} />{" "}
+              Import a project
             </button>
-            <button type="button" className="e-btn e-btn-quiet" onClick={() => exportProject(project)}>
+            <button
+              type="button"
+              className="e-btn e-btn-quiet"
+              onClick={() => exportProject(project)}
+            >
               <IconFileText size={15} /> Download the project
             </button>
-            <input ref={importer} type="file" accept="application/json,.json" hidden onChange={importFile} />
+            <input
+              ref={importer}
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={importFile}
+            />
 
             {/* The documents behind the tool. Quiet, at the bottom, out of the
                 way of everything anybody came here to press — but present on
@@ -695,10 +915,15 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                 it described lived behind a rail item called "Canvas". It is
                 the button now: the label you read is the thing you press. */}
             <Hint label="Client, appearance, background and how much of Discord is drawn">
-              <button type="button" className="e-stage-appearance" onClick={() => setSheetOpen("appearance")}>
+              <button
+                type="button"
+                className="e-stage-appearance"
+                onClick={() => setSheetOpen("appearance")}
+              >
                 <IconPalette size={15} stroke={1.8} />
                 <span>
-                  {project.canvas.platform === "mobile" ? "Phone" : "Desktop"} · {project.canvas.theme}
+                  {project.canvas.platform === "mobile" ? "Phone" : "Desktop"} ·{" "}
+                  {project.canvas.theme}
                 </span>
                 <IconChevronDown size={14} stroke={2} />
               </button>
@@ -708,14 +933,20 @@ export function Builder({ user, canSignIn = true, shared = null }) {
               <button
                 type="button"
                 className="e-icon-btn"
-                onClick={() => setZoom((z) => Math.max(0.4, Math.round((z - 0.1) * 10) / 10))}
+                onClick={() =>
+                  setZoom((z) => Math.max(0.4, Math.round((z - 0.1) * 10) / 10))
+                }
                 aria-label="Zoom out"
               >
                 <IconZoomOut size={16} />
               </button>
             </Hint>
             <Hint label="Fit the canvas" keys="⌘scroll to zoom">
-              <button type="button" className="e-zoom" onClick={() => setZoom(1)}>
+              <button
+                type="button"
+                className="e-zoom"
+                onClick={() => setZoom(1)}
+              >
                 {Math.round(shown * 100)}%
               </button>
             </Hint>
@@ -723,7 +954,9 @@ export function Builder({ user, canSignIn = true, shared = null }) {
               <button
                 type="button"
                 className="e-icon-btn"
-                onClick={() => setZoom((z) => Math.min(2, Math.round((z + 0.1) * 10) / 10))}
+                onClick={() =>
+                  setZoom((z) => Math.min(2, Math.round((z + 0.1) * 10) / 10))
+                }
                 aria-label="Zoom in"
               >
                 <IconZoomIn size={16} />
@@ -737,12 +970,15 @@ export function Builder({ user, canSignIn = true, shared = null }) {
             data-grabbing={dragging ? "true" : "false"}
             {...canvasHandlers}
           >
-            <div
-              className={`e-frame${project.canvas.platform === "mobile" ? " e-frame-phone" : ""}`}
-              style={{
-                width: project.canvas.width,
-                borderRadius: project.canvas.radius,
-                /* `zoom`, not `transform: scale()`. A transform paints the
+            <div className="e-stage-pad">
+              <div
+                className={`e-frame${phone ? " e-frame-phone" : ""}`}
+                style={{
+                  /* The phone is a device, not a narrow canvas: its width is the
+                   iPhone's, and the width slider does not apply to it. */
+                  width: phone ? PHONE_WIDTH : project.canvas.width,
+                  borderRadius: phone ? 54 : project.canvas.radius,
+                  /* `zoom`, not `transform: scale()`. A transform paints the
                    element smaller and leaves its box the original size, so a
                    1180px canvas shrunk to fit a phone still laid out 1180px
                    wide and the scaled picture sat off to one side of it.
@@ -750,18 +986,19 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                    scroller measures what is actually on screen. The PNG export
                    is unaffected: it rasterises the surface inside this
                    element, with its own `zoom: 1`. */
-                zoom: shown,
-              }}
-            >
-              <DiscordSurface
-                project={project}
-                selectedId={message?.id}
-                onSelect={(id) => {
-                  setSelected(id);
-                  setSheetOpen(null);
+                  zoom: shown,
                 }}
-                innerRef={stage}
-              />
+              >
+                <DiscordSurface
+                  project={project}
+                  selectedId={message?.id}
+                  onSelect={(id) => {
+                    setSelected(id);
+                    setSheetOpen(null);
+                  }}
+                  innerRef={stage}
+                />
+              </div>
             </div>
           </div>
         </main>
@@ -772,7 +1009,11 @@ export function Builder({ user, canSignIn = true, shared = null }) {
             <h2>Message</h2>
             {message ? (
               <Hint label="Copy this message&rsquo;s payload">
-                <button type="button" className="e-btn e-btn-quiet" onClick={copyJson}>
+                <button
+                  type="button"
+                  className="e-btn e-btn-quiet"
+                  onClick={copyJson}
+                >
                   <IconCopy size={14} /> Copy JSON
                 </button>
               </Hint>
@@ -780,7 +1021,11 @@ export function Builder({ user, canSignIn = true, shared = null }) {
           </header>
 
           {message ? (
-            <nav className="e-tabs" aria-label="Message parts" {...tabBlob.boxProps}>
+            <nav
+              className="e-tabs"
+              aria-label="Message parts"
+              {...tabBlob.boxProps}
+            >
               <Blob />
               {TABS.map((t) => (
                 <button
@@ -796,7 +1041,9 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                     <span className="e-tab-count">{message.embeds.length}</span>
                   ) : null}
                   {t === "Components" && message?.components?.length ? (
-                    <span className="e-tab-count">{message.components.length}</span>
+                    <span className="e-tab-count">
+                      {message.components.length}
+                    </span>
                   ) : null}
                 </button>
               ))}
@@ -825,7 +1072,11 @@ export function Builder({ user, canSignIn = true, shared = null }) {
 
           {message ? (
             <footer className="e-right-foot">
-              <button type="button" className="e-btn e-btn-quiet" onClick={() => exportMessageJson(message, project.name)}>
+              <button
+                type="button"
+                className="e-btn e-btn-quiet"
+                onClick={() => exportMessageJson(message, project.name)}
+              >
                 <IconDownload size={14} /> Download the message JSON
               </button>
             </footer>
@@ -841,7 +1092,13 @@ export function Builder({ user, canSignIn = true, shared = null }) {
           { id: "preview", label: "Preview", Icon: IconPhotoDown },
           { id: "inspector", label: "Edit", Icon: IconSettings },
         ].map(({ id, label, Icon }) => (
-          <button key={id} type="button" className="e-pane" data-on={pane === id ? "true" : "false"} onClick={() => setPane(id)}>
+          <button
+            key={id}
+            type="button"
+            className="e-pane"
+            data-on={pane === id ? "true" : "false"}
+            onClick={() => setPane(id)}
+          >
             <Icon size={18} stroke={1.8} />
             {label}
           </button>
@@ -884,7 +1141,9 @@ export function Builder({ user, canSignIn = true, shared = null }) {
               }}
             >
               <span className="e-template-name">Empty</span>
-              <span className="e-template-hint">One message and two members. Build it up from there.</span>
+              <span className="e-template-hint">
+                One message and two members. Build it up from there.
+              </span>
             </button>
           </li>
         </ul>
@@ -904,9 +1163,14 @@ export function Builder({ user, canSignIn = true, shared = null }) {
         open={sheetOpen === "appearance"}
         onClose={() => setSheetOpen(null)}
         title="Appearance"
-        subtitle="Which client, which of Discord\u2019s four themes, and how much of the window is drawn around the message."
+        subtitle="Which client, which of Discord’s four themes, and how much of the window is drawn around the message."
       >
-        <CanvasPanel project={project} commit={commit} onError={fail} onChrome={setChrome} />
+        <CanvasPanel
+          project={project}
+          commit={commit}
+          onError={fail}
+          onChrome={setChrome}
+        />
       </Sheet>
 
       <Sheet
@@ -936,39 +1200,52 @@ export function Builder({ user, canSignIn = true, shared = null }) {
       </Sheet>
 
       <Palette
-          open={paletteOpen}
-          onClose={() => setPaletteOpen(false)}
-          actions={[
-            { label: "Add a message", run: addMessage },
-            { label: "Duplicate this message", run: duplicateMessage },
-            { label: "Delete this message", run: removeMessage },
-            { label: "Export a PNG", run: doExportPng },
-            { label: "Copy a share link", run: doShare },
-            { label: "Copy the message JSON", run: copyJson },
-            { label: "Download the project file", run: () => exportProject(project) },
-            { label: "Open templates", run: () => setSheetOpen("templates") },
-            { label: "Undo", run: undo },
-            { label: "Redo", run: redo },
-            ...["light", "ash", "dark", "onyx"].map((theme) => ({
-              label: `Discord theme: ${theme}`,
-              run: () => commit((p) => ({ ...p, canvas: { ...p.canvas, theme } })),
-            })),
-            {
-              label: `Switch to the ${project.canvas.platform === "mobile" ? "desktop" : "phone"} client`,
-              run: () =>
-                commit((p) => ({
-                  ...p,
-                  canvas: { ...p.canvas, platform: p.canvas.platform === "mobile" ? "desktop" : "mobile" },
-                })),
-            },
-            { label: "Members", run: () => setSheetOpen("members") },
-            { label: "Appearance", run: () => setSheetOpen("appearance") },
-            { label: "Backups", run: () => setSheetOpen("backups") },
-          ]}
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        actions={[
+          { label: "Add a message", run: addMessage },
+          { label: "Duplicate this message", run: duplicateMessage },
+          { label: "Delete this message", run: removeMessage },
+          { label: "Export a PNG", run: doExportPng },
+          { label: "Copy a share link", run: doShare },
+          { label: "Copy the message JSON", run: copyJson },
+          {
+            label: "Download the project file",
+            run: () => exportProject(project),
+          },
+          { label: "Open templates", run: () => setSheetOpen("templates") },
+          { label: "Undo", run: undo },
+          { label: "Redo", run: redo },
+          ...["light", "ash", "dark", "onyx"].map((theme) => ({
+            label: `Discord theme: ${theme}`,
+            run: () =>
+              commit((p) => ({ ...p, canvas: { ...p.canvas, theme } })),
+          })),
+          {
+            label: `Switch to the ${project.canvas.platform === "mobile" ? "desktop" : "phone"} client`,
+            run: () =>
+              commit((p) => ({
+                ...p,
+                canvas: {
+                  ...p.canvas,
+                  platform:
+                    p.canvas.platform === "mobile" ? "desktop" : "mobile",
+                },
+              })),
+          },
+          { label: "Members", run: () => setSheetOpen("members") },
+          { label: "Appearance", run: () => setSheetOpen("appearance") },
+          { label: "Backups", run: () => setSheetOpen("backups") },
+        ]}
       />
 
       {toast ? (
-        <div className="e-toast e-no-export" data-tone={toast.tone} key={toast.key} role="status">
+        <div
+          className="e-toast e-no-export"
+          data-tone={toast.tone}
+          key={toast.key}
+          role="status"
+        >
           {toast.text}
         </div>
       ) : null}

@@ -13,8 +13,9 @@
  * interface can announce it was not designed.
  */
 
-import { createContext, useContext, useId, useRef, useState } from "react";
-import { IconPhoto, IconTrash, IconUpload } from "@tabler/icons-react";
+import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
+import { IconCheck, IconPalette, IconPhoto, IconTrash, IconUpload } from "@tabler/icons-react";
+import { HexColorPicker } from "react-colorful";
 import * as SwitchPrimitive from "@radix-ui/react-switch";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import {
@@ -24,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -230,70 +232,128 @@ export function Toggle({ label, hint, value, onChange }) {
   );
 }
 
-/* Discord's own accent presets alongside a free picker. The presets exist
-   because most embeds want one of about eight colours, and hunting for
-   #5865f2 in a colour wheel every time is not a workflow. */
-const SWATCHES = [
-  { value: "#5865f2", name: "Blurple" },
-  { value: "#f7a8c4", name: "Gator" },
-  { value: "#23a55a", name: "Green" },
-  { value: "#f0b232", name: "Yellow" },
-  { value: "#f23f43", name: "Red" },
-  { value: "#eb459e", name: "Pink" },
-  { value: "#00a8fc", name: "Blue" },
-  { value: "#949ba4", name: "Grey" },
+/* The colour control, copied from gatorsys.xyz.
+ *
+ * This was a native `<input type="color">`, which opens the operating
+ * system's picker — a different control on every machine, wearing none of
+ * this site's design. `ColorPicker` in `gatorsys.xyz/src/components/Manage/
+ * fields.tsx` is the one the dashboard's embed editor already uses: a swatch
+ * that opens a popover holding a real spectrum, the same fifteen presets, and
+ * a hex box. Same component, same swatches, same behaviour.
+ *
+ * The one addition is `allowNone`, because an embed here can have no accent
+ * at all and the dashboard's cannot. */
+const COLOR_SWATCHES = [
+  "#ffb3ab", "#fb7185", "#f97316", "#facc15", "#84cc16",
+  "#34d399", "#22d3ee", "#60a5fa", "#818cf8", "#a78bfa",
+  "#e879f9", "#f472b6", "#f8fafc", "#94a3b8", "#475569",
 ];
 
-export function ColorField({ value, onChange, allowNone = false }) {
+function normalizedHex(value, fallback) {
+  const next = (value ?? "").trim();
+  if (/^#[0-9a-f]{6}$/i.test(next)) return next.toLowerCase();
+  if (/^[0-9a-f]{6}$/i.test(next)) return `#${next.toLowerCase()}`;
+  return fallback;
+}
+
+export function ColorField({ value, onChange, allowNone = false, label = "Choose colour" }) {
+  const none = allowNone && (!value || value === "none");
+  const safeValue = normalizedHex(value, "#5865f2");
+  const [draft, setDraft] = useState(safeValue);
+
+  useEffect(() => setDraft(safeValue), [safeValue]);
+
   return (
     <div className="e-color">
-      <div className="e-swatches">
-        {allowNone ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button type="button" className="e-color-trigger" aria-label={label}>
+            <span
+              className="e-color-chip"
+              data-none={none ? "true" : "false"}
+              style={none ? undefined : { backgroundColor: safeValue }}
+            />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" sideOffset={8} className="e-color-pop">
+          <div className="e-color-pop-head">
+            <IconPalette size={15} />
+            <span>Colour</span>
+          </div>
+
+          {/* A full spectrum, so any colour is reachable — not only a preset. */}
+          <div className="e-colorful">
+            <HexColorPicker
+              color={safeValue}
+              onChange={(next) => {
+                setDraft(next);
+                onChange(next);
+              }}
+            />
+          </div>
+
+          <div className="e-color-swatches">
+            {allowNone ? (
               <button
                 type="button"
-                className="e-swatch e-swatch-none"
-                data-on={!value || value === "none" ? "true" : "false"}
+                className="e-color-swatch e-color-swatch-none"
+                data-on={none ? "true" : "false"}
                 onClick={() => onChange("none")}
                 aria-label="No accent"
               />
-            </TooltipTrigger>
-            <TooltipContent>No accent</TooltipContent>
-          </Tooltip>
-        ) : null}
-        {SWATCHES.map((s) => (
-          <Tooltip key={s.value}>
-            <TooltipTrigger asChild>
+            ) : null}
+            {COLOR_SWATCHES.map((swatch) => (
               <button
+                key={swatch}
                 type="button"
-                className="e-swatch"
-                style={{ background: s.value }}
-                data-on={value?.toLowerCase() === s.value ? "true" : "false"}
-                onClick={() => onChange(s.value)}
-                aria-label={s.name}
-              />
-            </TooltipTrigger>
-            <TooltipContent>{s.name}</TooltipContent>
-          </Tooltip>
-        ))}
-      </div>
-      <div className="e-color-custom">
-        <input
-          type="color"
-          className="e-color-input"
-          value={/^#[0-9a-f]{6}$/i.test(value ?? "") ? value : "#5865f2"}
-          onChange={(e) => onChange(e.target.value)}
-          aria-label="Custom colour"
-        />
-        <Input
-          className="e-control e-color-hex"
-          value={value ?? ""}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="#5865f2"
-          spellCheck={false}
-        />
-      </div>
+                className="e-color-swatch"
+                data-on={!none && safeValue === swatch ? "true" : "false"}
+                style={{ backgroundColor: swatch }}
+                onClick={() => onChange(swatch)}
+                aria-label={`Use ${swatch}`}
+              >
+                {!none && safeValue === swatch ? <IconCheck size={13} stroke={3} /> : null}
+              </button>
+            ))}
+          </div>
+
+          <div className="e-color-hexrow">
+            <input
+              className="e-control e-color-hex"
+              value={draft}
+              maxLength={7}
+              onChange={(event) => setDraft(event.target.value)}
+              onBlur={() => {
+                const next = normalizedHex(draft, safeValue);
+                setDraft(next);
+                onChange(next);
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                const next = normalizedHex(draft, safeValue);
+                setDraft(next);
+                onChange(next);
+              }}
+              aria-label="Custom hex colour"
+              spellCheck={false}
+            />
+            <span className="e-color-preview" style={none ? undefined : { backgroundColor: safeValue }} />
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      <Input
+        className="e-control e-color-value"
+        value={none ? "none" : (value ?? "")}
+        onChange={(event) => onChange(event.target.value)}
+        onBlur={() => {
+          if (none) return;
+          onChange(normalizedHex(value, safeValue));
+        }}
+        placeholder="#5865f2"
+        aria-label="Hex colour"
+        spellCheck={false}
+      />
     </div>
   );
 }

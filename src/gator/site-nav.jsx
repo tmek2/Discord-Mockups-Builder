@@ -106,7 +106,9 @@ export function SiteNav({ user, canSignIn = true, compact = false, links = true,
       <div className="g-nav-bar">
         <Link className="g-brand" href="/">
           <GatorLogo size={compact ? 24 : 30} />
-          <span className="g-brand-word">Gator Mockups</span>
+          {/* The mark already says Gator. Repeating it in the word next to it
+              spends the widest thing in the bar saying the same word twice. */}
+          <span className="g-brand-word">Mockups</span>
         </Link>
 
         {links ? (

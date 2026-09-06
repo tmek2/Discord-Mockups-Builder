@@ -175,54 +175,156 @@ textarea.e-control {
 
 /* --------------------------------------------------------------- colour */
 
+/* The colour control. Structure and behaviour are gatorsys.xyz's ColorPicker
+   from the dashboard's embed editor; this is the same component in this app's
+   tokens rather than the dashboard's Tailwind utilities. It replaced a native
+   `<input type="color">`, which opens the operating system's picker — a
+   different control on every machine, wearing none of our design. */
 .e-color {
   display: flex;
-  flex-direction: column;
+  min-width: 0;
+  align-items: center;
   gap: 8px;
 }
-.e-swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-.e-swatch {
-  width: 24px;
-  height: 24px;
-  border: 2px solid transparent;
-  border-radius: 7px;
+
+.e-color-trigger {
+  display: grid;
+  width: 48px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--g-line-strong);
+  border-radius: var(--g-r-inset);
+  background: var(--g-fill-2);
   cursor: pointer;
-  transition: transform var(--g-fast) var(--g-ease-out), border-color var(--g-fast) var(--g-ease-state);
+  transition:
+    border-color var(--g-fast) var(--g-ease-state),
+    background var(--g-fast) var(--g-ease-state);
 }
-.e-swatch:hover {
-  transform: scale(1.08);
+.e-color-trigger:hover {
+  border-color: var(--g-accent-line);
 }
-.e-swatch[data-on="true"] {
-  border-color: var(--g-ink);
+.e-color-chip {
+  width: 28px;
+  height: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  border-radius: 8px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+  transition: transform var(--g-fast) var(--g-ease-out);
 }
-.e-swatch-none {
+.e-color-trigger:hover .e-color-chip {
+  transform: scale(1.06);
+}
+/* "No accent" is drawn rather than left blank: an empty chip reads as broken. */
+.e-color-chip[data-none="true"],
+.e-color-swatch-none {
   background:
     linear-gradient(45deg, transparent 45%, var(--g-ink-faint) 45%, var(--g-ink-faint) 55%, transparent 55%),
     var(--g-fill-2);
 }
-.e-color-custom {
+
+.e-color-value {
+  min-width: 0;
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.e-color-pop {
+  width: 264px;
+  padding: 12px;
+}
+.e-color-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 12px;
+  color: var(--g-ink-dim);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.e-color-pop-head svg {
+  color: var(--g-accent-ink);
+}
+
+/* react-colorful, sized and rounded to sit inside the popover — the same
+   overrides gatorsys carries as `.gator-colorful`. */
+.e-colorful {
+  margin-bottom: 12px;
+}
+.e-colorful .react-colorful {
+  width: 100%;
+  height: 168px;
+  gap: 10px;
+}
+.e-colorful .react-colorful__saturation {
+  border-radius: 12px;
+  border-bottom: none;
+}
+.e-colorful .react-colorful__hue {
+  height: 14px;
+  border-radius: var(--g-r-pill);
+}
+.e-colorful .react-colorful__pointer {
+  width: 16px;
+  height: 16px;
+  border-width: 3px;
+}
+
+.e-color-swatches {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+.e-color-swatch {
+  position: relative;
+  display: grid;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--g-line);
+  border-radius: var(--g-r-inset);
+  cursor: pointer;
+  transition:
+    transform var(--g-fast) var(--g-ease-out),
+    border-color var(--g-fast) var(--g-ease-state);
+}
+.e-color-swatch:hover {
+  transform: scale(1.06);
+}
+.e-color-swatch[data-on="true"] {
+  border-color: var(--g-ink);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16);
+}
+.e-color-swatch svg {
+  color: rgba(0, 0, 0, 0.7);
+  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.8));
+}
+
+.e-color-hexrow {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.e-color-input {
-  width: 34px;
-  height: 30px;
-  flex: none;
-  padding: 2px;
-  border: 1px solid var(--g-line);
-  border-radius: 8px;
-  background: var(--g-fill);
-  cursor: pointer;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--g-line);
 }
 .e-color-hex {
+  min-width: 0;
   flex: 1;
-  font-family: ui-monospace, monospace;
+  height: 36px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
+  text-transform: uppercase;
+}
+.e-color-preview {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border: 1px solid var(--g-line);
+  border-radius: var(--g-r-inset);
 }
 
 /* ---------------------------------------------------------------- image */

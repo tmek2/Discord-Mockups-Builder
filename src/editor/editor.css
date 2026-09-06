@@ -50,8 +50,14 @@
 }
 
 .e-project-name {
-  width: min(24ch, 26vw);
+  /* Sized to the name, not to a share of the window. At 26vw the box was
+     four hundred pixels wide on a large screen, so "Saved" sat half a hand
+     away from the title it belongs to. `field-sizing` does this properly
+     where it exists; the width below is the fallback everywhere else. */
+  field-sizing: content;
+  width: min(20ch, 18vw);
   min-width: 8ch;
+  max-width: min(28ch, 22vw);
   padding: 4px 8px;
   border: 1px solid transparent;
   border-radius: 7px;
@@ -487,14 +493,46 @@
   flex: 1;
   min-height: 0;
   min-width: 0;
-  justify-content: center;
-  align-items: flex-start;
+  /* `safe` matters. Plain `justify-content: center` centres the plate, and
+     when the plate is larger than the stage it overflows *equally in both
+     directions* — but a scroll container can only reach overflow past its end,
+     so the left edge of a zoomed-in mockup became unreachable. `safe` falls
+     back to start-alignment exactly when centring would put content out of
+     reach. */
+  justify-content: safe center;
+  align-items: safe center;
   overflow: auto;
-  padding: 32px;
+  /* Deliberately generous, and the reason it is not 32px.
+     The cursor here says "grab", and at 32px that was a lie: a small mockup at
+     100% fits the stage with room to spare, so there was nothing to scroll and
+     dragging did nothing at all. An editor canvas is expected to move whether
+     or not its content happens to overflow — so the slack is always there, and
+     the cursor is always telling the truth. */
+  /* No padding here. The slack lives on `.e-stage-pad` inside.
+     Putting it on this element instead looked right and was not: with
+     `box-sizing: border-box`, padding taller than the box cannot fit inside
+     it, so the scroll container itself grew past the bottom of the window and
+     took part of the canvas out of reach. Padding on the *content* adds to the
+     scrollable area, which is what was wanted. */
+  padding: 0;
   cursor: grab;
   touch-action: pan-x pan-y;
   overscroll-behavior: contain;
 }
+/* The pannable room around the mockup.
+ *
+ * An editor canvas is expected to move whether or not its content happens to
+ * overflow — the cursor here says "grab", and at rest with a small mockup
+ * there was nothing to scroll, so it was a lie. A viewport's worth on each
+ * side means dragging always does something. The view is scrolled to the
+ * middle of it on the first paint, so the empty room is around the mockup and
+ * never in front of it. */
+.e-stage-pad {
+  display: flex;
+  margin: auto;
+  padding: 55vh 45vw;
+}
+
 .e-stage-scroll[data-grabbing="true"] {
   cursor: grabbing;
   /* Nothing should highlight while the canvas is being moved — a drag that
@@ -522,9 +560,12 @@
 
 /* The phone gets a device frame, because a 390px canvas floating in the middle
    of a desktop window does not read as a phone — it reads as a narrow canvas. */
+/* The device. A thin bezel and a corner radius taken from the phone itself —
+   a 38px radius on a 393px screen is visibly not an iPhone, and the 10px band
+   read as a picture frame rather than as a body. */
 .e-frame-phone {
-  border: 10px solid #16161a;
-  border-radius: 38px !important;
+  border: 8px solid #0c0c0e;
+  border-radius: 54px !important;
   box-shadow: var(--mac-lift-high), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 /* A canvas with one short message in it would be a sliver; these give it
@@ -539,8 +580,12 @@
 .e-frame .dc {
   min-height: 132px;
 }
+/* 852 to the phone's 393: the iPhone 15/16 viewport, so the screen has the
+   proportions of the thing it is imitating. `min-height`, not `height`, so a
+   long conversation grows the way a stitched screenshot does rather than
+   being cut off at the fold. */
 .e-frame-phone .dc {
-  min-height: 660px;
+  min-height: 852px;
 }
 
 /* --------------------------------------------------------------- right */

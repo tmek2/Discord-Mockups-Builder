@@ -281,8 +281,14 @@ export function EmojiPanel({ project, commit, onError }) {
 
 export function CanvasPanel({ project, commit, onError, onChrome }) {
   const canvas = project.canvas;
-  const set = (key, value) => commit((p) => ({ ...p, canvas: { ...p.canvas, [key]: value } }));
-  const setIn = (key, over) => commit((p) => ({ ...p, canvas: { ...p.canvas, [key]: { ...p.canvas[key], ...over } } }));
+  /* Tagged per field: dragging the width slider is one undo step, not one per
+     pixel, and moving to a different control starts a new one. */
+  const set = (key, value) => commit((p) => ({ ...p, canvas: { ...p.canvas, [key]: value } }), `canvas:${key}`);
+  const setIn = (key, over) =>
+    commit(
+      (p) => ({ ...p, canvas: { ...p.canvas, [key]: { ...p.canvas[key], ...over } } }),
+      `canvas:${key}:${Object.keys(over).sort().join(",")}`,
+    );
 
   return (
     <>
@@ -328,9 +334,17 @@ export function CanvasPanel({ project, commit, onError, onChrome }) {
       </Group>
 
       <Group title="Canvas">
-        <Field label="Width">
-          <Slider value={canvas.width} min={320} max={1400} step={10} onChange={(v) => set("width", v)} suffix="px" />
-        </Field>
+        {/* The phone's width is the phone's. Leaving the slider here would be
+            a control that moves and changes nothing. */}
+        {canvas.platform === "mobile" ? (
+          <Field label="Size" hint="The phone is drawn at 393 x 852, the iPhone viewport. Only the desktop canvas is resizable.">
+            <Text value="393 x 852" readOnly />
+          </Field>
+        ) : (
+          <Field label="Width">
+            <Slider value={canvas.width} min={320} max={1400} step={10} onChange={(v) => set("width", v)} suffix="px" />
+          </Field>
+        )}
         {canvas.chrome === "none" ? (
           <Field label="Padding">
             <Slider value={canvas.padding} min={0} max={80} onChange={(v) => set("padding", v)} suffix="px" />
@@ -373,32 +387,45 @@ export function CanvasPanel({ project, commit, onError, onChrome }) {
         ) : null}
       </Group>
 
-      <Group title="Channel" collapsible open={canvas.chrome !== "none"}>
-        <Row>
-          <Field label="Server name">
-            <Text value={canvas.server?.name} onChange={(v) => setIn("server", { name: v })} />
-          </Field>
-          <Field label="Channel">
+      {/* Only what is actually drawn.
+          These were all shown at once, so choosing "Messages" left you looking
+          at a server icon and a channel topic that appear nowhere, and a field
+          whose own hint said it only applies to a mode you were not in. A
+          setting that cannot affect anything is worse than a missing one: it
+          asks you to work out why it did nothing. */}
+      {canvas.chrome === "none" ? null : (
+        <Group title={canvas.chrome === "full" ? "Server and channel" : "Channel"}>
+          <Field label="Channel name">
             <Text value={canvas.channel?.name} onChange={(v) => setIn("channel", { name: v })} />
           </Field>
-        </Row>
-        <Field label="Topic">
-          <Text value={canvas.channel?.topic} onChange={(v) => setIn("channel", { topic: v })} />
-        </Field>
-        <ImageField
-          square
-          label="Server icon"
-          value={canvas.server?.icon}
-          onChange={(v) => setIn("server", { icon: v })}
-          onError={onError}
-        />
-        <Field label="Other channels" hint="Comma separated. Only drawn with the whole window.">
-          <Text
-            value={(canvas.channels ?? []).join(", ")}
-            onChange={(v) => set("channels", v.split(",").map((s) => s.trim()).filter(Boolean))}
-          />
-        </Field>
-      </Group>
+          <Field label="Topic" hint="The line beside the channel name in the header.">
+            <Text value={canvas.channel?.topic} onChange={(v) => setIn("channel", { topic: v })} />
+          </Field>
+
+          {/* The server rail and the channel sidebar only exist in the whole
+              window, and so do the things that fill them. */}
+          {canvas.chrome === "full" ? (
+            <>
+              <Field label="Server name">
+                <Text value={canvas.server?.name} onChange={(v) => setIn("server", { name: v })} />
+              </Field>
+              <ImageField
+                square
+                label="Server icon"
+                value={canvas.server?.icon}
+                onChange={(v) => setIn("server", { icon: v })}
+                onError={onError}
+              />
+              <Field label="Other channels" hint="Comma separated. They fill the sidebar.">
+                <Text
+                  value={(canvas.channels ?? []).join(", ")}
+                  onChange={(v) => set("channels", v.split(",").map((s) => s.trim()).filter(Boolean))}
+                />
+              </Field>
+            </>
+          ) : null}
+        </Group>
+      )}
 
       <Group title="Extras" collapsible>
         <Toggle label="Date divider" value={canvas.showDateDivider} onChange={(v) => set("showDateDivider", v)} />
