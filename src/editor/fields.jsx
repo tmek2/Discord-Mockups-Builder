@@ -124,9 +124,24 @@ export function Slider({ value, onChange, min, max, step = 1, suffix = "" }) {
 }
 
 /** The dashboard's Select. Options are `{value,label,hint}` or bare strings. */
+/* Radix reserves the empty string for "nothing is selected", and throws if an
+   item is given it as a value — which takes the whole editor down, because a
+   render error has no local recovery. But an empty value is exactly what an
+   option like "Not a reply" or "None" means, so the two readings collide.
+   Translated here, once, rather than left for every caller to remember: a
+   caller passes "" for the empty choice and this swaps in a private sentinel
+   on the way down and back out again. */
+const NONE = "\u0000none";
+
 export function Pick({ value, onChange, options, placeholder = "Choose" }) {
+  /* Only when the caller actually offers an empty choice. Without one, "" has
+     to keep meaning "unset" so the placeholder still shows. */
+  const clearable = options.some((o) => (o.value ?? o) === "");
+  const encode = (v) => (clearable && (v === "" || v == null) ? NONE : (v ?? ""));
+  const decode = (v) => (v === NONE ? "" : v);
+
   return (
-    <Select value={value ?? ""} onValueChange={onChange}>
+    <Select value={encode(value)} onValueChange={(v) => onChange(decode(v))}>
       <SelectTrigger className="e-control h-10">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
@@ -134,7 +149,7 @@ export function Pick({ value, onChange, options, placeholder = "Choose" }) {
         {options.map((o) => {
           const v = o.value ?? o;
           return (
-            <SelectItem key={v} value={v}>
+            <SelectItem key={v} value={encode(v)}>
               <span className="flex flex-col gap-0.5">
                 <span>{o.label ?? o}</span>
                 {o.hint ? (
