@@ -323,7 +323,7 @@
     "flat": true,
     "h": 32,
     "w": 32,
-    "x": 152,
+    "x": 200,
     "y": 56
    },
    "caret-down": {
@@ -333,144 +333,151 @@
     "x": 8,
     "y": 56
    },
-   "caret-right": {
+   "caret-left": {
     "flat": true,
     "h": 32,
     "w": 32,
     "x": 56,
+    "y": 56
+   },
+   "caret-right": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 104,
     "y": 56
    },
    "caret-up": {
     "flat": true,
     "h": 32,
     "w": 32,
-    "x": 104,
+    "x": 152,
     "y": 56
    },
    "channel-announcement": {
     "flat": false,
     "h": 32,
     "w": 32,
-    "x": 200,
+    "x": 248,
     "y": 56
    },
    "channel-forum": {
     "flat": false,
     "h": 32,
     "w": 32,
-    "x": 248,
+    "x": 296,
     "y": 56
    },
    "channel-rules": {
     "flat": false,
     "h": 32,
     "w": 32,
-    "x": 296,
+    "x": 344,
     "y": 56
    },
    "channel-text": {
     "flat": true,
     "h": 32,
     "w": 32,
-    "x": 344,
+    "x": 392,
     "y": 56
    },
    "channel-voice": {
     "flat": true,
     "h": 32,
     "w": 32,
-    "x": 392,
+    "x": 440,
     "y": 56
    },
    "check": {
     "flat": true,
     "h": 32,
     "w": 32,
-    "x": 488,
+    "x": 536,
     "y": 56
    },
    "check-circle": {
     "flat": true,
     "h": 32,
     "w": 32,
-    "x": 440,
+    "x": 488,
     "y": 56
    },
    "checked": {
     "flat": false,
     "h": 32,
     "w": 32,
-    "x": 536,
-    "y": 56
-   },
-   "close": {
-    "flat": true,
-    "h": 32,
-    "w": 32,
     "x": 8,
     "y": 104
    },
-   "code": {
+   "close": {
     "flat": true,
     "h": 32,
     "w": 32,
     "x": 56,
     "y": 104
    },
-   "configure": {
+   "code": {
     "flat": true,
     "h": 32,
     "w": 32,
     "x": 104,
     "y": 104
    },
-   "copy-id": {
+   "configure": {
     "flat": true,
     "h": 32,
     "w": 32,
     "x": 152,
     "y": 104
    },
-   "copy-link": {
+   "copy-id": {
     "flat": true,
     "h": 32,
     "w": 32,
     "x": 200,
     "y": 104
    },
-   "copy-text": {
+   "copy-link": {
     "flat": true,
     "h": 32,
     "w": 32,
     "x": 248,
     "y": 104
    },
+   "copy-text": {
+    "flat": true,
+    "h": 32,
+    "w": 32,
+    "x": 296,
+    "y": 104
+   },
    "delete": {
     "flat": false,
     "h": 32,
     "w": 32,
-    "x": 296,
+    "x": 344,
     "y": 104
    },
    "discord": {
     "flat": true,
     "h": 32,
     "w": 32,
-    "x": 344,
+    "x": 392,
     "y": 104
    },
    "download": {
     "flat": true,
     "h": 32,
     "w": 32,
-    "x": 392,
+    "x": 440,
     "y": 104
    },
    "edit": {
     "flat": true,
     "h": 32,
     "w": 32,
-    "x": 440,
+    "x": 488,
     "y": 104
    },
    "emoji": {
@@ -478,13 +485,6 @@
     "h": 32,
     "w": 32,
     "x": 536,
-    "y": 104
-   },
-   "emoji-animated": {
-    "flat": true,
-    "h": 32,
-    "w": 32,
-    "x": 488,
     "y": 104
    },
    "exit": {

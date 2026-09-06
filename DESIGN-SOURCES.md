@@ -56,6 +56,42 @@ possible mockup matches every rollout, operating system, density setting or
 feature flag. This is a visual editor, not the Discord client, and custom
 spacing and mixed content stay intentionally editable.
 
+## Performance
+
+Two things were making a large mockup heavier than it needed to be, and both
+were measured rather than guessed.
+
+**Images.** The icon library is 125 tiles, and a canvas draws forty of them at
+a time. Separately that is 125 requests, 125 decodes and 125 GPU textures for
+artwork that never changes; as one atlas it is one of each, 46KB, cached for a
+year. The atlas is preloaded so it is in flight with the document rather than
+after the stylesheet has been parsed, and the Twemoji CDN is preconnected so
+the first emoji a mockup draws is not also a DNS lookup and a TLS handshake.
+Emoji decode off the main thread and load lazily; so do the 240 avatars in the
+picker.
+
+The trade-off in a CSS mask is real — [Cloud Four's stress
+test](https://cloudfour.com/thinks/svg-icon-stress-test/) found masking the
+slowest of the icon techniques at a thousand icons on one page. That is not
+this: forty glyphs at a time, and the alternative is baking a copy of every
+icon per colour state, which loses the hover and the destructive red. One
+decoded atlas serving all of them is the cheaper end of that trade.
+
+**Typing.** A keystroke in the content field re-parsed the markdown of every
+message on the canvas. Three things caused it: each row was handed a freshly
+constructed click closure, the render context carried the whole message list so
+any edit invalidated every consumer, and the row was not memoised. All three
+are fixed — one handler for the stream that reads the id off the row, replies
+resolved on the way past instead of out of context, and `memo` on the row. In
+a Chrome CPU profile the markdown parser was 11.7% of samples during a typing
+burst and is now absent from it. Script time per keystroke, measured through
+the DevTools protocol rather than a wall clock:
+
+| messages on canvas | before | after |
+| --- | --- | --- |
+| 40 | 8.8 ms | 5.0 ms |
+| 150 | 22.5 ms | 7.1 ms |
+
 ## The editor
 
 - **Tokens, appearance, header and controls** are ported from the 2026 landing

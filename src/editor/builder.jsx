@@ -320,6 +320,15 @@ export function Builder({ user, canSignIn = true, shared = null }) {
     [project.messages, selected],
   );
 
+  /* Stable, and it matters more than it looks. Written inline this was a new
+     function on every render, which reached every message on the canvas as a
+     changed prop and made the memo on the row useless — so a keystroke
+     re-parsed every markdown tree in the mockup. */
+  const pickOnCanvas = useCallback((id) => {
+    setSelected(id);
+    setSheetOpen(null);
+  }, []);
+
   const patchMessage = useCallback(
     (over) => {
       if (!message) return;
@@ -1012,10 +1021,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                 <DiscordSurface
                   project={project}
                   selectedId={message?.id}
-                  onSelect={(id) => {
-                    setSelected(id);
-                    setSheetOpen(null);
-                  }}
+                  onSelect={pickOnCanvas}
                   innerRef={stage}
                 />
               </div>

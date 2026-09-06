@@ -76,7 +76,7 @@ function ChannelHeader({ canvas, mobile }) {
   if (mobile) {
     return (
       <header className="dc-m-head" aria-hidden="true">
-        <Icon name="caret" size={22} className="dc-m-back" />
+        <Icon name="caret-left" size={22} className="dc-m-back" />
         <Icon name="channel-text" size={20} className="dc-hash" />
         <span className="dc-m-head-name">{canvas.channel?.name || "general"}</span>
         <span className="dc-m-head-tools">
