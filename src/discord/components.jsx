@@ -84,7 +84,14 @@ function Select({ block }) {
             <path d={SELECT_ICON[block.kind]} stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         ) : null}
-        <span className="dc-select-placeholder">{block.placeholder || "Make a selection"}</span>
+        {/* A menu that takes more than one answer says so instead of showing
+            its placeholder — the client replaces the line rather than adding
+            to it, which is the visible difference between the two menus. */}
+        <span className="dc-select-placeholder">
+          {(block.maxValues ?? 1) > 1
+            ? `Select up to ${Math.min(block.maxValues, (block.options ?? []).length || block.maxValues)}`
+            : block.placeholder || "Make a selection"}
+        </span>
         <svg className="dc-select-caret" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="m7 10 5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -107,7 +114,10 @@ function Section({ block }) {
           <Button button={accessory} />
         </div>
       ) : accessory.src ? (
-        <img className="dc-section-thumb" src={accessory.src} alt={accessory.alt || ""} draggable={false} />
+        <span className={`dc-section-thumb-slot${accessory.spoiler ? " dc-media-spoiler" : ""}`}>
+          <img className="dc-section-thumb" src={accessory.src} alt={accessory.alt || ""} draggable={false} />
+          {accessory.spoiler ? <span className="dc-spoiler-tag">Spoiler</span> : null}
+        </span>
       ) : null}
     </div>
   );

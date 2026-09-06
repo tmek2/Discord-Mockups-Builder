@@ -26,7 +26,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { BLOCK_TYPES, LIMITS, NESTABLE, newBlock, newButton, newSelectOption, reid, uid } from "@/lib/model";
-import { ColorField, Counter, Field, ImageField, Pick, Row, Segmented, Text, Toggle } from "./fields";
+import { ColorField, Counter, Field, ImageField, Num, Pick, Row, Segmented, Text, Toggle } from "./fields";
 import { EmojiInsert, EmojiSlot, useEmojiInsert } from "./emoji-picker";
 
 /* The project's uploaded emoji, so every picker in the tree offers them
@@ -194,6 +194,14 @@ function SectionBody({ block, patch, onError }) {
           <Field label="Alt text" hint="Drawn as the ALT tag the client puts on described media.">
             <Text value={accessory.alt} onChange={(alt) => setAccessory({ alt })} />
           </Field>
+          {/* A thumbnail carries its own spoiler in the spec, separately from
+              the container it might sit in. */}
+          <Toggle
+            label="Spoiler"
+            hint="Blurred with a Spoiler tag, the way the client delivers one."
+            value={accessory.spoiler}
+            onChange={(spoiler) => setAccessory({ spoiler })}
+          />
         </>
       )}
     </>
@@ -320,6 +328,20 @@ function SelectBody({ block, patch }) {
         <Text value={block.placeholder} onChange={(v) => patch({ placeholder: v })} limit={LIMITS.selectPlaceholder} />
       </Field>
       <Toggle label="Disabled" value={block.disabled} onChange={(v) => patch({ disabled: v })} />
+
+      {/* How many may be chosen. The client draws a different menu for a
+          multi-select — "Select up to 3" rather than the placeholder — so this
+          is visible in a mockup rather than a detail of the payload. */}
+      {(block.kind || "string") === "string" ? (
+        <Row>
+          <Field label="Choose at least" hint="0 lets the menu be left empty.">
+            <Num value={block.minValues ?? 1} min={0} max={25} onChange={(v) => patch({ minValues: v })} />
+          </Field>
+          <Field label="Choose at most" hint="Above 1 the client draws a multi-select.">
+            <Num value={block.maxValues ?? 1} min={1} max={25} onChange={(v) => patch({ maxValues: v })} />
+          </Field>
+        </Row>
+      ) : null}
 
       {(!block.kind || block.kind === "string") ? (
         <>

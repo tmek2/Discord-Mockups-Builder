@@ -49,6 +49,12 @@ function validBlocks(list, depth = 0) {
   return list.every((b) => {
     if (!isObject(b) || !BLOCK_TYPES.has(b.type)) return false;
     if (!["content", "placeholder", "color", "name", "size", "kind"].every((k) => optString(b, k))) return false;
+    /* How many a menu takes. Bounded to Discord's own 0-25 so a hostile
+       project cannot ask the renderer for a menu of four billion. */
+    for (const k of ["minValues", "maxValues"]) {
+      if (b[k] === undefined) continue;
+      if (typeof b[k] !== "number" || !Number.isFinite(b[k]) || b[k] < 0 || b[k] > 25) return false;
+    }
     if (b.type === "container" && b.blocks !== undefined && !validBlocks(b.blocks, depth + 1)) return false;
     if (b.buttons !== undefined) {
       if (!Array.isArray(b.buttons) || b.buttons.length > 25) return false;

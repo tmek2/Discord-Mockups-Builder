@@ -100,11 +100,17 @@ export function Text({ value, onChange, limit, multiline, rows = 3, ref, classNa
 }
 
 export function Num({ value, onChange, min, max, step = 1, suffix }) {
+  /* Same as `Text` and `Pick`: the label above points at this control by id,
+     which is the only way it gets a name — the wrapper below means the field's
+     implicit association never reaches the input. */
+  const field = useContext(FieldContext);
   return (
     <span className="e-num">
       <Input
         type="number"
         className="e-control"
+        id={field?.id}
+        aria-labelledby={field?.labelId}
         value={value ?? 0}
         min={min}
         max={max}

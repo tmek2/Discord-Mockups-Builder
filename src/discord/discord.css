@@ -1782,3 +1782,11 @@
 .dc-mobile .dc-profile {
   width: 100%;
 }
+
+/* A section thumbnail can be spoilered on its own, so it needs a wrapper to
+   blur and to hang the tag on — the image itself is the thing being hidden. */
+.dc-section-thumb-slot {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}

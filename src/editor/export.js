@@ -131,12 +131,19 @@ function toComponent(block) {
             custom_id: `select_${block.id.slice(0, 8)}`,
             placeholder: block.placeholder || undefined,
             disabled: block.disabled || undefined,
+            /* Only when they differ from the default of one, which is what the
+               API assumes and what a payload with them in it reads as noise. */
+            min_values: block.minValues !== undefined && block.minValues !== 1 ? block.minValues : undefined,
+            max_values: block.maxValues !== undefined && block.maxValues !== 1 ? block.maxValues : undefined,
             options:
               (block.kind ?? "string") === "string"
                 ? (block.options ?? []).map((o) => ({
                     label: o.label,
                     value: o.label.toLowerCase().replace(/\W+/g, "_").slice(0, 100) || "option",
                     description: o.description || undefined,
+                    /* The same shape a button's emoji takes, a few lines
+                       below — one way of saying it, not two. */
+                    emoji: o.emoji ? { name: o.emoji } : undefined,
                   }))
                 : undefined,
           },
@@ -377,6 +384,8 @@ function fromComponent(c, uid) {
           kind: SELECT_FROM[menu.type] ?? "string",
           placeholder: menu.placeholder ?? "",
           disabled: Boolean(menu.disabled),
+          minValues: menu.min_values ?? 1,
+          maxValues: menu.max_values ?? 1,
           options: (menu.options ?? []).map((o) => ({
             id: uid(),
             label: o.label ?? "",
