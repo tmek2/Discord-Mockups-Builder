@@ -76,6 +76,10 @@ import "./editor.css";
    the shortcut belongs here rather than in a help page nobody opens. */
 const STORE_KEY = "project";
 const SLUG_KEY = "slug";
+/* Which saved backup this working copy belongs to, if any. See the backups
+   panel: a linked mockup is one where "Save" means "update that backup"
+   rather than "make yet another one". */
+const LINK_KEY = "backupLink";
 
 export function Builder({ user, canSignIn = true, shared = null }) {
   const [project, setProject] = useState(blankProject);
@@ -83,6 +87,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
      makes "save" mean "update mine" rather than "update whichever one this
      came from". Minted per document, never reused across a fork. */
   const [slug, setSlug] = useState(() => ID.mockup());
+  const [linkedId, setLinkedId] = useState(null);
   const [past, setPast] = useState([]);
   const [future, setFuture] = useState([]);
   /* Which overlay is open, if any: "templates" | "members" | "appearance" |
@@ -147,13 +152,14 @@ export function Builder({ user, canSignIn = true, shared = null }) {
       };
     }
 
-    Promise.all([loadValue(STORE_KEY), loadValue(SLUG_KEY)])
-      .then(([saved, savedSlug]) => {
+    Promise.all([loadValue(STORE_KEY), loadValue(SLUG_KEY), loadValue(LINK_KEY)])
+      .then(([saved, savedSlug, savedLink]) => {
         if (!alive) return;
         const next = migrate(saved);
         if (validProject(next)) {
           setProject(next);
           if (typeof savedSlug === "string") setSlug(savedSlug);
+          if (typeof savedLink === "string") setLinkedId(savedLink);
         }
       })
       .catch(() => {
@@ -175,7 +181,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
     if (!loaded) return undefined;
     setSavedLocally(false);
     const timer = window.setTimeout(() => {
-      Promise.all([saveValue(STORE_KEY, project), saveValue(SLUG_KEY, slug)])
+      Promise.all([saveValue(STORE_KEY, project), saveValue(SLUG_KEY, slug), saveValue(LINK_KEY, linkedId)])
         .then(() => setSavedLocally(true))
         .catch(() =>
           fail(
@@ -184,7 +190,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
         );
     }, 500);
     return () => window.clearTimeout(timer);
-  }, [project, slug, loaded, fail]);
+  }, [project, slug, linkedId, loaded, fail]);
 
   /* An automatic snapshot, on a timer, and only when something has actually
      changed since the last one. A snapshot per interval regardless would fill
@@ -1132,6 +1138,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
                 className="e-template"
                 onClick={() => {
                   load(template.build(), ID.mockup());
+      setLinkedId(null);
                   setSheetOpen(null);
                   notify(`Opened \u201c${template.name}\u201d.`);
                 }}
@@ -1147,6 +1154,7 @@ export function Builder({ user, canSignIn = true, shared = null }) {
               className="e-template"
               onClick={() => {
                 load(blankProject(), ID.mockup());
+                setLinkedId(null);
                 setSheetOpen(null);
               }}
             >
@@ -1193,6 +1201,8 @@ export function Builder({ user, canSignIn = true, shared = null }) {
         <BackupsPanel
           project={project}
           slug={slug}
+          linkedId={linkedId}
+          onLink={setLinkedId}
           user={user}
           canSignIn={canSignIn}
           savedLocally={savedLocally}

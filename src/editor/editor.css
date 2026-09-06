@@ -752,14 +752,18 @@
   font-weight: 600;
 }
 .e-legal a {
+  /* Padded so the link is a target rather than a 17px-tall line of text. */
+  padding: 5px 4px;
+  border-radius: 6px;
   color: var(--g-ink-faint);
   text-decoration: none;
-  transition: color var(--g-fast) var(--g-ease-state);
+  transition:
+    color var(--g-fast) var(--g-ease-state),
+    background var(--g-fast) var(--g-ease-state);
 }
 .e-legal a:hover {
+  background: var(--g-fill-2);
   color: var(--g-ink);
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 
 .e-right-foot {

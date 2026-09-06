@@ -58,6 +58,7 @@
 }
 
 .b-open {
+  position: relative;
   display: flex;
   flex: 1;
   min-width: 0;
@@ -125,4 +126,181 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* ------------------------------------------------------ the linked backup */
+
+/* When the working copy belongs to a backup, that relationship is the first
+   thing in the panel: what it is called, when it was last written, and the two
+   things you can do about it. Without this the panel could tell you that
+   fourteen backups existed but not which one you were editing. */
+.b-linked {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--g-accent-line);
+  border-radius: var(--g-r-inset);
+  background: var(--g-accent-soft);
+}
+.b-linked-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  place-items: center;
+  border-radius: var(--g-r-inset);
+  background: var(--g-fill-2);
+  color: var(--g-accent-ink);
+}
+.b-linked-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+/* The name is the rename control. A pencil floating next to a label is a
+   thing people miss; a name you can press is one they try. */
+.b-linked-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--g-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.b-linked-name svg {
+  color: var(--g-ink-faint);
+  opacity: 0;
+  transition: opacity var(--g-fast) var(--g-ease-state);
+}
+.b-linked-name:hover svg,
+.b-linked-name:focus-visible svg {
+  opacity: 1;
+}
+.b-linked-copy em {
+  color: var(--g-ink-faint);
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 600;
+}
+.b-linked-copy em[data-saved="true"] {
+  color: var(--g-gator);
+}
+.b-linked-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+/* ------------------------------------------------------ search or create */
+
+.b-find {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.b-find-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--g-ink-dim);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.012em;
+  cursor: pointer;
+}
+.b-find-count {
+  color: var(--g-ink-faint);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+/* One row, because the field and the button are one action: type a name, and
+   either it is already in the list below or this makes it. */
+.b-find-row {
+  display: flex;
+  gap: 8px;
+}
+.b-find-row .e-control {
+  min-width: 0;
+  flex: 1;
+}
+.b-find-row .e-btn {
+  flex: none;
+}
+
+.b-count {
+  display: inline-grid;
+  min-width: 20px;
+  height: 20px;
+  place-items: center;
+  padding: 0 6px;
+  border-radius: var(--g-r-pill);
+  background: var(--g-fill-2);
+  color: var(--g-ink-dim);
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 620px) {
+  .b-linked {
+    flex-wrap: wrap;
+  }
+  .b-linked-actions {
+    width: 100%;
+  }
+  .b-linked-actions .e-btn {
+    flex: 1;
+  }
+  .b-find-row {
+    flex-wrap: wrap;
+  }
+  .b-find-row .e-btn {
+    width: 100%;
+  }
+}
+
+/* Says what pressing the row does. The row has always been the open button;
+   nothing on it admitted that until you had already tried. */
+/* `.b-open` is a column of name-over-meta, so the hint cannot be pushed right
+   with a margin — it is taken out of the flow and pinned to the row's trailing
+   edge, clear of the icon buttons. */
+.b-open-hint {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--g-r-pill);
+  background: var(--g-fill-2);
+  color: var(--g-ink-dim);
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity var(--g-fast) var(--g-ease-state);
+}
+.b-row:hover .b-open-hint,
+.b-open:focus-visible .b-open-hint {
+  opacity: 1;
+}
+/* Touch has no hover to reveal it with. */
+@media (pointer: coarse) {
+  .b-open-hint {
+    opacity: 1;
+  }
 }

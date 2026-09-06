@@ -18,8 +18,12 @@ import {
   IconCloud,
   IconCloudCheck,
   IconCloudOff,
+  IconArrowBackUp,
+  IconCopy,
   IconDeviceFloppy,
   IconDownload,
+  IconFileText,
+  IconPlus,
   IconHistory,
   IconPencil,
   IconRefresh,
@@ -33,10 +37,16 @@ import {
   readBackup,
   renameBackup,
   saveBackup,
+  updateBackup,
 } from "@/lib/backups";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
 import { Empty, Group } from "./fields";
 import "./backups-panel.css";
+
+/* Discohook caps a backup name at 100; the same number, for the same reason —
+   a name is a label, not a description. */
+const NAME_MAX = 100;
 
 const when = (t) => {
   const secs = Math.round((Date.now() - t) / 1000);
@@ -56,7 +66,7 @@ const size = (bytes) => (bytes > 1024 * 1024 ? `${(bytes / 1048576).toFixed(1)} 
  * keystroke, which re-rendered the panel, which remounted every row — and a
  * row that remounts between the press and the release never sees the click.
  * That is why restoring, renaming and deleting all silently did nothing. */
-function BackupRow({ row, busy, onOpen, onRename, onDelete, icon }) {
+function BackupRow({ row, busy, onOpen, onRename, onDuplicate, onDelete, icon }) {
   return (
     <li className="b-row" data-current={row.current ? "true" : "false"}>
       <button type="button" className="b-open" onClick={onOpen} disabled={busy}>
@@ -68,6 +78,12 @@ function BackupRow({ row, busy, onOpen, onRename, onDelete, icon }) {
           {row.messages} {row.messages === 1 ? "message" : "messages"}
           {row.bytes ? ` · ${size(row.bytes)}` : ""} · {when(row.savedAt ?? row.updatedAt)}
         </span>
+        {/* The whole row opens the backup, which is not something anybody
+            guesses from a row. It says so when you point at it. */}
+        <span className="b-open-hint">
+          {row.current ? "Open again" : "Open"}
+          <IconArrowBackUp size={13} />
+        </span>
       </button>
       {onRename ? (
         <Tooltip>
@@ -77,6 +93,16 @@ function BackupRow({ row, busy, onOpen, onRename, onDelete, icon }) {
             </button>
           </TooltipTrigger>
           <TooltipContent>Rename</TooltipContent>
+        </Tooltip>
+      ) : null}
+      {onDuplicate ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button type="button" className="e-icon-btn" onClick={onDuplicate} aria-label="Duplicate">
+              <IconCopy size={14} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Duplicate</TooltipContent>
         </Tooltip>
       ) : null}
       <Tooltip>
@@ -91,11 +117,16 @@ function BackupRow({ row, busy, onOpen, onRename, onDelete, icon }) {
   );
 }
 
-export function BackupsPanel({ project, slug, user, canSignIn, onLoad, onError, onNotify, savedLocally }) {
+export function BackupsPanel({ project, slug, user, canSignIn, linkedId, onLink, onLoad, onError, onNotify, savedLocally }) {
   const [rows, setRows] = useState(null);
   const [cloud, setCloud] = useState(null);
   const [busy, setBusy] = useState(false);
   const [noCloud, setNoCloud] = useState(false);
+  const [query, setQuery] = useState("");
+
+  /* The backup this working copy belongs to, if it still exists — a backup can
+     be deleted from under a link. */
+  const linked = (rows ?? []).find((r) => r.id === linkedId) ?? null;
 
   const refreshLocal = useCallback(() => {
     listAll()
@@ -154,6 +185,10 @@ export function BackupsPanel({ project, slug, user, canSignIn, onLoad, onError, 
       return;
     }
     onLoad(restored);
+    /* Opening a named backup links to it, so the next Save updates the thing
+       you just opened. An automatic snapshot is a moment in time rather than
+       a document, so restoring one links to nothing. */
+    onLink?.(String(id).startsWith("auto:") ? null : id);
     onNotify("Backup opened as a working copy.");
   };
 
@@ -213,45 +248,150 @@ export function BackupsPanel({ project, slug, user, canSignIn, onLoad, onError, 
     }
   };
 
+  /* Saving a linked mockup updates the backup it belongs to. Without the link
+     every save made another copy, so a person working on one mockup ended up
+     with fourteen of it and no way to tell which was current. */
+  const saveLinked = async () => {
+    if (!linked) return makeBackup();
+    setBusy(true);
+    try {
+      await updateBackup(linked.id, project);
+      onNotify(`\u201c${linked.name}\u201d updated.`);
+      refreshLocal();
+    } catch {
+      onError("Could not write the backup. Browser storage may be full.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const createNamed = async () => {
+    const name = query.trim() || project.name;
+    setBusy(true);
+    try {
+      const id = await saveBackup(project, name);
+      onLink?.(id);
+      setQuery("");
+      onNotify(`\u201c${name}\u201d backed up in this browser.`);
+      refreshLocal();
+    } catch {
+      onError("Could not write the backup. Browser storage may be full.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const duplicate = async (row) => {
+    const copy = await readBackup(row.id).catch(() => null);
+    if (!copy) return onError("That backup could not be read.");
+    await saveBackup(copy, `${row.name} copy`);
+    refreshLocal();
+  };
+
   const named = (rows ?? []).filter((r) => !r.auto);
   const autos = (rows ?? []).filter((r) => r.auto);
+  const hit = (r) => r.name.toLowerCase().includes(query.trim().toLowerCase());
+  const shownNamed = query.trim() ? named.filter(hit) : named;
+  const exact = named.some((r) => r.name.toLowerCase() === query.trim().toLowerCase());
 
   return (
     <>
-      <div className="b-state" data-saved={savedLocally ? "true" : "false"}>
-        <IconDeviceFloppy size={15} />
-        <span>
-          <strong>{savedLocally ? "Saved in this browser" : "Saving…"}</strong>
-          <em>Written on every change and restored when you come back.</em>
-        </span>
+      {/* The backup this mockup belongs to, if it belongs to one. Everything
+          about it is here: what it is called, when it was last written, and
+          the two things you can do to the relationship. */}
+      {linked ? (
+        <div className="b-linked">
+          <span className="b-linked-icon">
+            <IconFileText size={17} />
+          </span>
+          <span className="b-linked-copy">
+            <button type="button" className="b-linked-name" onClick={() => rename(linked)}>
+              {linked.name}
+              <IconPencil size={13} />
+            </button>
+            <em data-saved={savedLocally ? "true" : "false"}>
+              {savedLocally ? `Saved ${when(linked.savedAt)}` : "Saving\u2026"}
+            </em>
+          </span>
+          <span className="b-linked-actions">
+            <button type="button" className="e-btn e-btn-solid" onClick={saveLinked} disabled={busy}>
+              <IconDeviceFloppy size={14} /> Save
+            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="e-btn e-btn-quiet" onClick={() => onLink?.(null)}>
+                  Unlink
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Keep editing without changing that backup</TooltipContent>
+            </Tooltip>
+          </span>
+        </div>
+      ) : (
+        <div className="b-state" data-saved={savedLocally ? "true" : "false"}>
+          <IconDeviceFloppy size={15} />
+          <span>
+            <strong>{savedLocally ? "Saved in this browser" : "Saving\u2026"}</strong>
+            <em>Written on every change and restored when you come back. Not a backup.</em>
+          </span>
+        </div>
+      )}
+
+      {/* One field for both jobs, because with a list this long they are the
+          same job: you type a name to find it, and if it is not there yet the
+          button beside you makes it. */}
+      <div className="b-find">
+        <label className="b-find-label" htmlFor="b-find-input">
+          Search or name a new backup
+          <span className="b-find-count">
+            {query.length}/{NAME_MAX}
+          </span>
+        </label>
+        <div className="b-find-row">
+          <Input
+            id="b-find-input"
+            className="e-control"
+            value={query}
+            maxLength={NAME_MAX}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={project.name}
+            spellCheck={false}
+          />
+          <button
+            type="button"
+            className="e-btn e-btn-solid"
+            onClick={createNamed}
+            disabled={busy || exact}
+            title={exact ? "A backup already has that name" : undefined}
+          >
+            <IconPlus size={15} /> Create backup
+          </button>
+        </div>
       </div>
 
       <Group
         title="Backups in this browser"
-        action={
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button type="button" className="e-btn e-btn-quiet" onClick={makeBackup} disabled={busy}>
-                <IconDeviceFloppy size={14} /> Back up now
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Keep a copy of this mockup as it is</TooltipContent>
-          </Tooltip>
-        }
+        action={<span className="b-count">{named.length}</span>}
       >
         {rows === null ? (
           <Empty>Reading your backups…</Empty>
         ) : named.length === 0 ? (
-          <Empty>No backups yet. “Back up now” keeps a copy you can come back to.</Empty>
+          <Empty>
+            No backups yet. Name one above and press Create backup to keep a copy you can come back
+            to.
+          </Empty>
+        ) : shownNamed.length === 0 ? (
+          <Empty>Nothing matches “{query.trim()}”. Create backup makes one with that name.</Empty>
         ) : (
           <ul className="b-list">
-            {named.map((row) => (
+            {shownNamed.map((row) => (
               <BackupRow
                 key={row.id}
-                row={row}
+                row={{ ...row, current: row.id === linkedId }}
                 busy={busy}
                 onOpen={() => open(row.id)}
                 onRename={() => rename(row)}
+                onDuplicate={() => duplicate(row)}
                 onDelete={() => remove(row.id)}
               />
             ))}

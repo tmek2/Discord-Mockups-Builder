@@ -375,10 +375,16 @@ textarea.e-control {
   border-bottom: 1px solid var(--g-line);
 }
 .e-group-title,
+/* The header of a collapsible group is how you open it, so it is the whole
+   row rather than the width and height of its own words — an 18px-tall strip
+   of text is a thing you have to aim at to open. */
 .e-group-toggle {
-  display: inline-flex;
+  display: flex;
+  width: 100%;
+  min-height: 34px;
   align-items: center;
   gap: 6px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--g-ink);
@@ -523,16 +529,24 @@ textarea.e-control {
   font-variant-numeric: tabular-nums;
 }
 
+/* 32, not 28.
+ *
+ * Every icon-only control in the editor is one of these — undo, redo, the
+ * reorder row, zoom, the backup row's actions — and at 28px they were the
+ * smallest things on screen while also being the ones with no words on them.
+ * A target you have to aim at is a target somebody misses. */
 .e-icon-btn {
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   flex: none;
   place-items: center;
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
-  color: var(--g-ink-faint);
+  /* Was `--g-ink-faint`, which on the raised panels is close enough to the
+     ground that an unlit icon read as a disabled one. */
+  color: var(--g-ink-dim);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
@@ -552,6 +566,14 @@ textarea.e-control {
 .e-icon-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+/* A finger is not a pointer. Where there is no hover to reveal a tooltip with,
+   the target is the only affordance, so it gets the room. */
+@media (pointer: coarse) {
+  .e-icon-btn {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 .e-stack {
